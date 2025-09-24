@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist/sw",
+    "lib": [
+      "webworker",
+      "es2015"
+    ],
+    "skipLibCheck": true
+  },
+  "include": ["src/sw"]
+}
