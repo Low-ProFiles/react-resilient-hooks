@@ -30,6 +30,28 @@ function App() {
 }
 ```
 
+## Development (Monorepo)
+
+This project is a monorepo managed with npm workspaces. The packages are located in the `packages` directory.
+
+-   `packages/hooks`: The main `react-resilient-hooks` library code.
+-   `packages/landing`: The Next.js landing page for the project.
+
+### Running the Landing Page
+
+To run the landing page for local development:
+
+1.  **Navigate to the project root directory.**
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+3.  **Run the development server:**
+    ```bash
+    npm run dev --workspace=react-resilient-hooks-landing
+    ```
+    This will start the landing page on `http://localhost:3000`.
+
 ## Installation
 
 ```bash

@@ -1,0 +1,15 @@
+{
+  "name": "react-resilient-hooks-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w react-resilient-hooks",
+    "lint": "npm run lint -w react-resilient-hooks",
+    "test": "npm test -w react-resilient-hooks"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
