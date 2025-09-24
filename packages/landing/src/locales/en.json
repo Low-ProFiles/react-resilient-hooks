@@ -1,0 +1,197 @@
+{
+  "header": {
+    "title": "React Resilient Hooks",
+    "description": "A collection of React hooks to make your web applications more resilient to network issues."
+  },
+  "home": {
+    "title": "Welcome to React Resilient Hooks",
+    "description": "This library provides a set of React hooks designed to handle unreliable network conditions, making your applications more robust and user-friendly. Explore the hooks in the sidebar to see how they can help you build better web experiences.",
+    "button": "Explore Hooks"
+  },
+  "hooks": {
+    "useOnline": {
+      "title": "useOnline",
+      "description": [
+        "Benefit: Easily prevent failed API calls or disable UI features when the user is offline.",
+        "How it Works: This hook listens to the browser's native `online` and `offline` window events. It uses a simple `useState` to expose the real-time value of `navigator.onLine`, providing a live boolean status of the network connection."
+      ],
+      "example": [
+        "import { useOnline } from 'react-resilient-hooks';",
+        "",
+        "function OnlineStatus() {",
+        "  const isOnline = useOnline();",
+        "",
+        "  return (",
+        "    <div>",
+        "      <h1>{isOnline ? '✅ Online' : '❌ Offline'}</h1>",
+        "      <button disabled={!isOnline}>Submit</button>",
+        "    </div>",
+        "  );",
+        "}"
+      ]
+    },
+    "useNetworkStatus": {
+      "title": "useNetworkStatus",
+      "description": [
+        "Benefit: Adapt your app's behavior to the user's actual network quality, such as serving lower-quality assets on slow networks to save data.",
+        "How it Works: It accesses the `navigator.connection` object provided by the browser's Network Information API. It then listens for the `change` event on this object to provide real-time updates to network characteristics like `effectiveType` and `downlink` speed."
+      ],
+      "example": [
+        "import { useNetworkStatus } from 'react-resilient-hooks';",
+        "",
+        "function NetworkInfo() {",
+        "  const { effectiveType, downlink } = useNetworkStatus();",
+        "",
+        "  return (",
+        "    <div>",
+        "      <p>Effective Connection: {effectiveType}</p>",
+        "      <p>Downlink Speed: {downlink} Mbps</p>",
+        "      {effectiveType === 'slow-2g' && <p>Low quality mode enabled</p>}",
+        "    </div>",
+        "  );",
+        "}"
+      ]
+    },
+    "useRetryRequest": {
+      "title": "useRetryRequest",
+      "description": [
+        "Benefit: Increases the success rate of critical API calls without user intervention, making the app feel much more reliable against temporary network or server hiccups.",
+        "How it Works: It uses a state machine (`loading`, `retrying`, `error`, `success`). When the fetch promise rejects, it increments a retry counter and schedules the next attempt using `setTimeout` with an exponential backoff delay (`delay * 2 ** retryCount`), preventing server overload."
+      ],
+      "example": [
+        "import { useRetryRequest } from 'react-resilient-hooks';",
+        "",
+        "function UserProfile() {",
+        "  const fetchUser = () => fetch('/api/user').then(res => res.json());",
+        "  const { data, error, isLoading, retry } = useRetryRequest(fetchUser, { retryCount: 3 });",
+        "",
+        "  if (isLoading) return <p>Loading...</p>;",
+        "  if (error) return <button onClick={retry}>Retry</button>;",
+        "",
+        "  return <h1>Welcome, {data.name}</h1>;",
+        "}"
+      ]
+    },
+    "useBackgroundSync": {
+      "title": "useBackgroundSync",
+      "description": [
+        "Benefit: Guarantees that user-initiated 'write' operations (like POST, PUT, DELETE) will be completed, even if they go offline or close the tab. This prevents data loss for things like submitting forms or sending messages.",
+        "How it Works: It leverages the browser's native Service Worker and the Background Synchronization API. When you call the `sync` function with a failing request, the Service Worker registers a 'sync' event. The browser then takes over, holding the event in a queue and firing it once connectivity is restored. The retry behavior (how long it holds the request) is managed by the browser, which can be up to 24 hours."
+      ],
+      "example": [
+        "import { useBackgroundSync } from 'react-resilient-hooks';",
+        "",
+        "function CommentForm() {",
+        "  const { sync } = useBackgroundSync('comments-queue');",
+        "",
+        "  const handleSubmit = async (event) => {",
+        "    event.preventDefault();",
+        "    const payload = { text: event.target.comment.value };",
+        "    await sync(() => fetch('/api/comments', {",
+        "      method: 'POST',",
+        "      body: JSON.stringify(payload)",
+        "    }));",
+        "  };",
+        "",
+        "  return <form onSubmit={handleSubmit}>...</form>;",
+        "}"
+      ]
+    },
+    "useOfflineCache": {
+      "title": "useOfflineCache",
+      "description": [
+        "Benefit: Enables a true offline-first experience, allowing users to browse previously viewed content without a network connection.",
+        "How it Works: It uses a Service Worker to intercept network `fetch` events. For GET requests, it employs a stale-while-revalidate strategy. It first serves a response from the cache (via the Cache API) for speed, then sends the network request in the background to update the cache for the next visit. The actual response data is stored securely in the browser's Cache Storage, which persists until the user clears their browser data."
+      ],
+      "example": [
+        "// In your service worker:",
+        "import { precacheAndRoute } from 'workbox-precaching';",
+        "import { registerOfflineCache } from 'react-resilient-hooks/sw';",
+        "",
+        "precacheAndRoute(self.__WB_MANIFEST);",
+        "registerOfflineCache();",
+        "",
+        "// In your component, just fetch as usual:",
+        "function Articles() {",
+        "  // This fetch will be cached and available offline.",
+        "  const [articles, setArticles] = useState([]);",
+        "  useEffect(() => {",
+        "    fetch('/api/articles').then(res => res.json()).then(setArticles);",
+        "  }, []);",
+        "",
+        "  return <ul>{articles.map(a => <li key={a.id}>{a.title}</li>)}</ul>;",
+        "}"
+      ]
+    },
+    "useAdaptiveImage": {
+      "title": "useAdaptiveImage",
+      "description": [
+        "Benefit: Improves page load speed and reduces data consumption for users on poor networks, directly impacting user experience and conversion rates.",
+        "How it Works: This hook utilizes `useNetworkStatus` internally. It checks the current `effectiveType` of the network connection and uses it as a key to find the most appropriate image URL from the source object you provide. If no specific match is found, it returns the designated fallback URL."
+      ],
+      "example": [
+        "import { useAdaptiveImage } from 'react-resilient-hooks';",
+        "",
+        "const imageSources = {",
+        "  'slow-2g': 'image-low.jpg',",
+        "  '2g': 'image-medium.jpg',",
+        "  '3g': 'image-high.jpg',",
+        "  '4g': 'image-ultra.jpg',",
+        "};",
+        "",
+        "function AdaptiveImage() {",
+        "  const src = useAdaptiveImage(imageSources, 'image-high.jpg');",
+        "",
+        "  return <img src={src} alt='Dynamically loaded' />;",
+        "}"
+      ]
+    },
+    "useConnectionAwarePolling": {
+      "title": "useConnectionAwarePolling",
+      "description": [
+        "Benefit: Creates an efficient and 'smart' polling mechanism that respects the user's battery and data plan by preventing unnecessary network traffic.",
+        "How it Works: It uses `useOnline` internally. The hook wraps your polling function in a `setInterval`. When the `isOnline` status from `useOnline` changes to `false`, it clears the interval using `clearInterval`. When the status returns to `true`, it immediately invokes the function once and then restarts the interval."
+      ],
+      "example": [
+        "import { useConnectionAwarePolling } from 'react-resilient-hooks';",
+        "",
+        "function StockTicker() {",
+        "  const [price, setPrice] = useState(0);",
+        "  const fetchStockPrice = () => {",
+        "    fetch('/api/stock').then(res => res.json()).then(data => setPrice(data.price));",
+        "  };",
+        "",
+        "  useConnectionAwarePolling(fetchStockPrice, 5000);",
+        "",
+        "  return <p>Current Price: {price}</p>;",
+        "}"
+      ]
+    },
+    "useWebsocket": {
+      "title": "useWebsocket",
+      "description": [
+        "Benefit: Ensures a stable real-time communication channel, simplifying the implementation of features like live charts, notifications, or multi-user collaboration.",
+        "How it Works: It manages a WebSocket instance within a `useRef` to prevent re-creation on re-renders. It attaches event listeners for `onopen`, `onclose`, and `onerror`. In the `onclose` handler, it schedules a reconnection attempt using `setTimeout` with an exponential backoff delay, preventing the server from being spammed with reconnection requests."
+      ],
+      "example": [
+        "import { useWebsocket } from 'react-resilient-hooks';",
+        "",
+        "function LiveChat() {",
+        "  const { lastMessage, readyState } = useWebsocket('wss://my-chat-server.com');",
+        "",
+        "  if (readyState !== 1) return <p>Connecting...</p>;",
+        "",
+        "  return (",
+        "    <div>",
+        "      <p>Last message: {lastMessage?.data}</p>",
+        "    </div>",
+        "  );",
+        "}"
+      ]
+    }
+  },
+  "languageSwitcher": {
+    "ko": "한국어",
+    "en": "English"
+  }
+}
