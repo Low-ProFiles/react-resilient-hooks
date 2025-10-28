@@ -5,7 +5,8 @@ on:
     branches:
       - main
     paths:
-      - 'landing/**'
+      - 'packages/landing/**'
+      - '.github/workflows/deploy-landing.yml'
 
 jobs:
   build-and-deploy:
@@ -14,16 +15,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20'
+          cache: 'pnpm'
 
       - name: Install Dependencies
-        run: npm install
+        run: pnpm install
 
       - name: Build
-        run: npm run build --workspace=react-resilient-hooks-landing
+        run: pnpm --filter react-resilient-hooks-landing build
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
