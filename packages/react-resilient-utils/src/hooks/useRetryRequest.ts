@@ -1,14 +1,11 @@
 import { useRetry } from './useRetry';
 import { useResilientContext } from '../core/ResilientProvider';
+import { RetryPolicy, DefaultRetryPolicy } from '@resilient/core';
 
 export function useRetryRequest<T = unknown>(
   input: RequestInfo,
   options: RequestInit = {},
-  retryOptions?: {
-    retries?: number;
-    retryDelay?: number;
-    backoff?: 'fixed' | 'exponential';
-  }
+  retryPolicy: RetryPolicy = new DefaultRetryPolicy()
 ) {
   const { fetcher } = useResilientContext();
   const fetchFn = async () => {
@@ -19,5 +16,5 @@ export function useRetryRequest<T = unknown>(
     return (await res.json()) as T;
   };
 
-  return useRetry(fetchFn, retryOptions?.retries, retryOptions?.retryDelay, retryOptions?.backoff);
+  return useRetry(fetchFn, (error, attempt) => retryPolicy.shouldRetry(error), (attempt) => retryPolicy.getDelay(attempt));
 }
