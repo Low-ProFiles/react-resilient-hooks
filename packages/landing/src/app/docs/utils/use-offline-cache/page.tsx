@@ -1,13 +1,15 @@
 import { CodeBlock } from '../../../../components/CodeBlock';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function UseOfflineCachePage() {
   return (
     <div>
       <h1 className="text-3xl font-bold mb-4">useOfflineCache</h1>
-      <p className="mb-4">A simple example of using `useOfflineCache`:</p>
+      <p className="mb-4">A simple example of using `useOfflineCache` with animations:</p>
       <CodeBlock
         code={`import { useOfflineCache } from '@resilient/utils';
 import { MemoryCacheStore } from '@resilient/core';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const cache = new MemoryCacheStore();
 
@@ -18,9 +20,25 @@ const MyComponent = () => {
     cache
   );
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error!</p>;
-  return <pre>{JSON.stringify(data, null, 2)}</pre>;
+  return (
+    <AnimatePresence>
+      {loading && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          Loading...
+        </motion.div>
+      )}
+      {error && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <p>Error!</p>
+        </motion.div>
+      )}
+      {data && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <pre>{JSON.stringify(data, null, 2)}</pre>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 }`}
         language="tsx"
       />
