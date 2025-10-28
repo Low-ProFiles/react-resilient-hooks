@@ -12,3 +12,4 @@ export * from './policies/implementations';
 export * from './stores/types';
 export * from './stores/implementations';
 export * from './sw/service-worker';
+export * from './sw/types';
