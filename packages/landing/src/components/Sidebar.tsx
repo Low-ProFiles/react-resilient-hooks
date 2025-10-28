@@ -1,38 +1,45 @@
-'use client';
-
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useI18n } from '../contexts/I18nProvider';
 
-export const Sidebar = () => {
-  const { t } = useI18n();
-  const pathname = usePathname();
-  const hooks = Object.keys(t.hooks);
-
+const Sidebar = () => {
   return (
-    <aside className="w-full md:w-64 p-4 border-r h-full overflow-y-auto">
-      <h2 className="text-lg font-semibold mb-4">Hooks</h2>
+    <aside className="w-64 bg-gray-800 text-white p-4">
       <nav>
         <ul>
-          {hooks.map((hookKey) => {
-            const href = `/hooks/${hookKey}`;
-            const isActive = pathname === href;
-            return (
-              <li key={hookKey} className="mb-2">
-                <Link href={href}>
-                  <span
-                    className={`block p-2 rounded-md text-sm ${
-                      isActive ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    {t.hooks[hookKey].title}
-                  </span>
-                </Link>
+          <li>
+            <Link href="/docs">Introduction</Link>
+          </li>
+          <li>
+            <Link href="/docs/getting-started">Getting Started</Link>
+          </li>
+          <li>
+            <span className="font-bold">Core</span>
+            <ul>
+              <li>
+                <Link href="/docs/core/policies">Policies</Link>
               </li>
-            );
-          })}
+              <li>
+                <Link href="/docs/core/stores">Stores</Link>
+              </li>
+            </ul>
+          </li>
+          <li>
+            <span className="font-bold">Utils</span>
+            <ul>
+              <li>
+                <Link href="/docs/utils/use-retry">useRetry</Link>
+              </li>
+              <li>
+                <Link href="/docs/utils/use-offline-cache">useOfflineCache</Link>
+              </li>
+              <li>
+                <Link href="/docs/utils/use-background-sync">useBackgroundSync</Link>
+              </li>
+            </ul>
+          </li>
         </ul>
       </nav>
     </aside>
   );
 };
+
+export default Sidebar;
