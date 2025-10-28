@@ -1,6 +1,6 @@
 'use client';
 
-import { useWebsocket } from 'react-resilient-hooks';
+import { useWebsocket } from "@resilient/utils";
 
 export function UseWebsocketDemo() {
   const { messages, error, sendMessage } = useWebsocket('wss://echo.websocket.org');

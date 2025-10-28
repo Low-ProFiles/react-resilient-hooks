@@ -1,6 +1,6 @@
 "use client";
 
-import { useConnectionAwarePolling, useOnline } from "react-resilient-hooks";
+import { useConnectionAwarePolling, useOnline } from "@resilient/utils";
 import { useState } from "react";
 
 export function UseConnectionAwarePollingDemo() {

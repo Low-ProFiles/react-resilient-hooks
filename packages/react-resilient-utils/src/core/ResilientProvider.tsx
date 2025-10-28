@@ -1,6 +1,5 @@
 import React, { createContext, useContext } from 'react';
-import { StorageProvider } from './types';
-import { storageFactory, StorageType } from './storageFactory';
+import { StorageProvider, storageFactory, StorageType } from '@resilient/core';
 
 interface ResilientContextValue {
   fetcher: typeof fetch;

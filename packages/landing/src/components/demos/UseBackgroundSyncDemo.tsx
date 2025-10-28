@@ -1,36 +1,12 @@
 "use client";
 
-import { useBackgroundSync } from "react-resilient-hooks";
-import { useState, useEffect } from "react";
+import { useBackgroundSync, QueuedReq } from "@resilient/utils";
+import { MemoryQueueStore } from "@resilient/core";
 
-interface Message {
-  id: number;
-  content: string;
-  status: "pending" | "synced" | "failed";
-}
+const queueStore = new MemoryQueueStore<QueuedReq>();
 
 export function UseBackgroundSyncDemo() {
-  const { enqueue, queue } = useBackgroundSync({ storeBody: true });
-  const [messageContent, setMessageContent] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [nextId, setNextId] = useState(1);
-
-  // Update message status when queue changes (items are processed)
-  useEffect(() => {
-    setMessages((prevMessages) =>
-      prevMessages.map((msg) => {
-        if (
-          msg.status === "pending" &&
-          !queue.some((qItem) => Number(qItem.id) === msg.id)
-        ) {
-          // Assuming item is no longer in queue means it was synced or failed
-          // For a real app, `enqueue` would return a promise or callback for more precise status
-          return { ...msg, status: "synced" }; // Optimistically mark as synced
-        }
-        return msg;
-      })
-    );
-  }, [queue]);
+  const [status,setStatus] = useState<ResilientResult>({status:"idle"})
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -46,7 +22,6 @@ export function UseBackgroundSyncDemo() {
     setMessageContent("");
 
     try {
-      // `enqueue` returns a promise that resolves when the sync is complete
       await enqueue(
         `https://httpbin.org/post?id=${newMessage.id}`,
         {
@@ -130,4 +105,4 @@ export function UseBackgroundSyncDemo() {
       </p>
     </div>
   );
-}
+}}
