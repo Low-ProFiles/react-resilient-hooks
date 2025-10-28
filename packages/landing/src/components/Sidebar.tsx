@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-const Sidebar = () => {
+export const Sidebar = () => {
   return (
     <aside className="w-64 bg-gray-800 text-white p-4">
       <nav>
@@ -41,5 +41,3 @@ const Sidebar = () => {
     </aside>
   );
 };
-
-export default Sidebar;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { ResilientState } from "../core/types";
+import { ResilientState } from "@resilient/core";
 
 export type NetworkInfo = {
   online: boolean

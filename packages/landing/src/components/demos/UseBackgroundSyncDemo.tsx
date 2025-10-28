@@ -1,12 +1,59 @@
 "use client";
 
-import { useBackgroundSync, QueuedReq } from "@resilient/utils";
-import { MemoryQueueStore } from "@resilient/core";
+import { useState, useEffect } from "react";
+import { ResilientResult, QueueStore, MemoryQueueStore } from "@resilient/core";
+import { requestBackgroundSync } from "@resilient/utils";
+
+export type QueuedReq = { id: string; url: string; options?: RequestInit; meta?: Record<string, unknown> };
+
+interface Message {
+  id: number;
+  content: string;
+  status: "pending" | "synced" | "failed";
+}
 
 const queueStore = new MemoryQueueStore<QueuedReq>();
 
 export function UseBackgroundSyncDemo() {
-  const [status,setStatus] = useState<ResilientResult>({status:"idle"})
+  const [status, setStatus] = useState<ResilientResult>({ status: "idle" });
+  const [messageContent, setMessageContent] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [nextId, setNextId] = useState(1);
+
+  const enqueue = async (url: string, options?: RequestInit, meta?: Record<string, unknown>) => {
+    const item: QueuedReq = { id: `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`, url, options, meta };
+    await queueStore.enqueue(item);
+    try {
+      await requestBackgroundSync("rrh-background-sync");
+    } catch (err) {
+      console.error("Background sync request failed:", err);
+    }
+    return item.id;
+  };
+
+  const flush = async () => {
+    setStatus({ status: "loading" });
+    while (!(await queueStore.isEmpty())) {
+      const req = await queueStore.dequeue();
+      if (req) {
+        try {
+          const res = await fetch(req.url, req.options);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        } catch (err) {
+          setStatus({ status: "error", error: new Error("flush failed") });
+          await queueStore.enqueue(req); // Re-enqueue failed request
+          return;
+        }
+      }
+    }
+    setStatus({ status: "success" });
+  };
+
+  useEffect(() => {
+    const onOnline = () => flush();
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [flush]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -22,7 +69,7 @@ export function UseBackgroundSyncDemo() {
     setMessageContent("");
 
     try {
-      await enqueue(
+      const enqueuedId = await enqueue(
         `https://httpbin.org/post?id=${newMessage.id}`,
         {
           method: "POST",
@@ -33,9 +80,10 @@ export function UseBackgroundSyncDemo() {
         },
         { tag: newMessage.id.toString() } // Use message ID as unique tag for the sync
       );
+      // Update message status when enqueued successfully
       setMessages((prevMessages) =>
         prevMessages.map((msg) =>
-          msg.id === newMessage.id ? { ...msg, status: "synced" } : msg
+          msg.id === newMessage.id ? { ...msg, status: "pending" } : msg
         )
       );
     } catch (error) {
@@ -65,10 +113,6 @@ export function UseBackgroundSyncDemo() {
           Submit (will sync offline)
         </button>
       </form>
-
-      <p className="text-sm text-gray-600 mb-2">
-        Pending in queue: <strong>{queue.length}</strong>
-      </p>
 
       <div className="border p-4 rounded-md bg-gray-50 min-h-[100px]">
         <h3 className="text-lg font-semibold mb-2">Submitted Messages:</h3>
@@ -105,4 +149,4 @@ export function UseBackgroundSyncDemo() {
       </p>
     </div>
   );
-}}
+}

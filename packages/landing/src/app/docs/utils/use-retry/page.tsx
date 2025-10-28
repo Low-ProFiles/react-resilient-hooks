@@ -51,9 +51,7 @@ const fetchWithRetry = () => {
       </AnimatePresence>
     </div>
   );
-}`}
-        language="tsx"
-      />
+}`} />
     </div>
   );
 }

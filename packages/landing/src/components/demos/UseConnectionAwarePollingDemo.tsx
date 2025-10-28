@@ -40,7 +40,7 @@ export function UseConnectionAwarePollingDemo() {
       </p>
 
       <p className="text-sm text-gray-500 mt-4">
-        <strong>How to test:</strong> Go offline in your browser's DevTools
+        <strong>How to test:</strong> Go offline in your browser&apos;s DevTools
         (Network tab), observe polling pause, then go back online to see it
         resume.
       </p>
