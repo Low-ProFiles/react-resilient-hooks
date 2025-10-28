@@ -1,6 +1,6 @@
 "use client";
 
-import { useConnectionAwarePolling, useOnline } from "@resilient/utils";
+import { useConnectionAwarePolling, useOnline } from "react-resilient-hooks";
 import { useState } from "react";
 
 export function UseConnectionAwarePollingDemo() {
@@ -40,7 +40,7 @@ export function UseConnectionAwarePollingDemo() {
       </p>
 
       <p className="text-sm text-gray-500 mt-4">
-        <strong>How to test:</strong> Go offline in your browser&apos;s DevTools
+        <strong>How to test:</strong> Go offline in your browser's DevTools
         (Network tab), observe polling pause, then go back online to see it
         resume.
       </p>

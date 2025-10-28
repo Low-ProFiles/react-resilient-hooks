@@ -1,6 +1,6 @@
 'use client';
 
-import { useAdaptiveImage } from "@resilient/utils";
+import { useAdaptiveImage } from "react-resilient-hooks";
 import { useI18n } from '../../contexts/I18nProvider';
 
 const imageSources = {

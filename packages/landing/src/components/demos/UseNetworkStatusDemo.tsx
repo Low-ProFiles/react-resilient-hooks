@@ -1,6 +1,6 @@
 "use client";
 
-import { useNetworkStatus } from "@resilient/utils";
+import { useNetworkStatus } from "react-resilient-hooks";
 
 export function UseNetworkStatusDemo() {
   const { data: value } = useNetworkStatus();

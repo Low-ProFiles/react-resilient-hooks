@@ -1,15 +1,12 @@
 'use client';
 
-import { useOfflineCache } from '@resilient/utils';
-import { MemoryCacheStore } from '@resilient/core';
-
-const cacheStore = new MemoryCacheStore();
+import { useOfflineCache } from 'react-resilient-hooks';
 
 export function UseOfflineCacheDemo() {
   const { data, loading, error } = useOfflineCache(
     'user_profile',
     () => fetch('https://jsonplaceholder.typicode.com/users/1').then((res) => res.json()),
-    cacheStore
+    { ttlMs: 60000 }
   );
 
   if (loading) return <p>Loading...</p>;

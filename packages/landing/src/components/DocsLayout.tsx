@@ -1,7 +1,7 @@
 import { Sidebar } from './Sidebar';
 import { ReactNode } from 'react';
 import { LanguageSwitcher } from './LanguageSwitcher';
-import { ResilientProvider } from '@resilient/utils';
+import { ResilientProvider } from 'react-resilient-hooks';
 
 export const DocsLayout = ({ children }: { children: ReactNode }) => {
   return (

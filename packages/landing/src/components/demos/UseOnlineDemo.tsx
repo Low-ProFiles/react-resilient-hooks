@@ -1,6 +1,6 @@
 'use client';
 
-import { useOnline } from "@resilient/utils";
+import { useOnline } from 'react-resilient-hooks';
 
 export function UseOnlineDemo() {
   const isOnline = useOnline();

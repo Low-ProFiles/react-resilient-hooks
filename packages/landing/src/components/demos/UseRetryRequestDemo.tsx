@@ -1,10 +1,9 @@
 'use client';
 
-import { useRetryRequest } from '@resilient/utils';
-import { DefaultRetryPolicy } from '@resilient/core';
+import { useRetryRequest } from 'react-resilient-hooks';
 
 export function UseRetryRequestDemo() {
-  const { data, error, loading, retry } = useRetryRequest<Record<string, unknown>>('https://httpbin.org/status/500', {}, new DefaultRetryPolicy(3, 100));
+  const { data, error, loading, retry } = useRetryRequest('https://httpbin.org/status/500', {}, { retries: 3 });
 
   return (
     <div>

@@ -8,7 +8,6 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
-  transpilePackages: ['@resilient/core', '@resilient/utils'],
 };
 
 const pwaConfig = withPWA({
