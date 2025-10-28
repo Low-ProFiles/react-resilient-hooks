@@ -6,4 +6,5 @@ export * from './core/storageFactory';
 export * from './core/storageProvider';
 export * from './core/types';
 export * from './policies/types';
+export * from './stores/types';
 export * from './sw/service-worker';
