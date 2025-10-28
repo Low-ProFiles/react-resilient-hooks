@@ -1,0 +1,32 @@
+{
+  "name": "@resilient/core",
+  "version": "0.2.0",
+  "description": "Core package for resilient applications, providing policies, stores, and domain logic without React dependency.",
+  "files": [
+    "dist"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "test": "jest"
+  },
+  "keywords": [
+    "resilience",
+    "offline",
+    "network",
+    "background-sync",
+    "policy"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/serviceworker": "^0.0.153",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5.4.5",
+    "tsup": "^8.0.2"
+  },
+  "dependencies": {}
+}
