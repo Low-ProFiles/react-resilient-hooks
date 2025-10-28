@@ -8,4 +8,5 @@ export * from './core/types';
 export * from './policies/types';
 export * from './policies/implementations';
 export * from './stores/types';
+export * from './stores/implementations';
 export * from './sw/service-worker';
