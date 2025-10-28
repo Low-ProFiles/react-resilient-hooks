@@ -1,25 +1,31 @@
 import { useState, useCallback } from 'react';
-import { ResilientState } from '@resilient/core';
+import { ResilientState, EventBus } from '@resilient/core';
 
 export function useRetry<T>(
   fn: () => Promise<T>,
   shouldRetry: (error: any, attempt: number) => boolean,
-  getDelay: (attempt: number) => number
+  getDelay: (attempt: number) => number,
+  eventBus?: EventBus<ResilientState<T>>
 ): ResilientState<T> & { retry: () => void } {
   const [state, setState] = useState<ResilientState<T>>({ data: null, error: null, loading: false });
 
+  const updateState = (newState: ResilientState<T>) => {
+    setState(newState);
+    eventBus?.publish(newState);
+  };
+
   const run = useCallback(async () => {
-    setState({ data: null, error: null, loading: true });
+    updateState({ data: null, error: null, loading: true });
     let attempt = 0;
     while (true) {
       try {
         const result = await fn();
-        setState({ data: result, error: null, loading: false });
+        updateState({ data: result, error: null, loading: false });
         return;
       } catch (err) {
         attempt++;
         if (!shouldRetry(err, attempt)) {
-          setState({ data: null, error: err as Error, loading: false });
+          updateState({ data: null, error: err as Error, loading: false });
           return;
         } else {
           const delay = getDelay(attempt);
@@ -27,7 +33,7 @@ export function useRetry<T>(
         }
       }
     }
-  }, [fn, shouldRetry, getDelay]);
+  }, [fn, shouldRetry, getDelay, eventBus]);
 
   return { ...state, retry: run };
 }
