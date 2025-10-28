@@ -1,0 +1,31 @@
+{
+  "name": "@resilient/utils",
+  "version": "0.2.0",
+  "description": "React hooks for resilient applications, built on top of @resilient/core.",
+  "files": [
+    "dist"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "test": "jest"
+  },
+  "keywords": [
+    "react",
+    "hooks",
+    "resilience",
+    "offline",
+    "network"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/react": "^19.1.13",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@resilient/core": "0.2.0",
+    "react": "^18.3.1"
+  }
+}
