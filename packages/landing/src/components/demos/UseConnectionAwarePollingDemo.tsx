@@ -1,6 +1,6 @@
 'use client';
 
-import { useConnectionAwarePolling, useNetworkStatus } from 'react-resilient-hooks';
+import { useAdaptivePolling, useNetworkStatus } from 'react-resilient-hooks';
 import { useState } from 'react';
 
 export function UseConnectionAwarePollingDemo() {
@@ -27,7 +27,7 @@ export function UseConnectionAwarePollingDemo() {
     }
   };
 
-  const pollingState = useConnectionAwarePolling(fetchData, {
+  const { state: pollingState, pause, resume, triggerNow } = useAdaptivePolling(fetchData, {
     baseInterval: 5000,
     maxInterval: 30000,
     jitter: true,
@@ -45,13 +45,35 @@ export function UseConnectionAwarePollingDemo() {
 
   return (
     <div className="space-y-6">
+      {/* Control Buttons */}
+      <div className="flex gap-3">
+        <button
+          onClick={pollingState.isPaused ? resume : pause}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            pollingState.isPaused
+              ? 'bg-green-600 hover:bg-green-700 text-white'
+              : 'bg-yellow-600 hover:bg-yellow-700 text-white'
+          }`}
+        >
+          {pollingState.isPaused ? 'Resume' : 'Pause'}
+        </button>
+        <button
+          onClick={triggerNow}
+          className="px-4 py-2 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+        >
+          Fetch Now
+        </button>
+      </div>
+
       {/* Status Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-gray-50 dark:bg-zinc-800 rounded-xl p-4 text-center">
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Status</p>
           <div className="flex items-center justify-center gap-2">
             <span className={`w-2 h-2 rounded-full ${pollingState.isPolling ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
-            <p className="font-semibold">{pollingState.isPolling ? 'Active' : 'Paused'}</p>
+            <p className="font-semibold">
+              {pollingState.isPaused ? 'Paused' : pollingState.isPolling ? 'Active' : 'Stopped'}
+            </p>
           </div>
         </div>
         <div className="bg-gray-50 dark:bg-zinc-800 rounded-xl p-4 text-center">
@@ -101,7 +123,7 @@ export function UseConnectionAwarePollingDemo() {
         <h4 className="font-semibold text-purple-900 dark:text-purple-100 mb-2">How it works</h4>
         <p className="text-sm text-purple-700 dark:text-purple-300">
           The polling interval automatically adjusts based on your network speed.
-          4G = 5s, 3G = 10s, 2G = 15s. Try throttling in DevTools to see the interval change.
+          4G = 5s, 3G = 10s, 2G = 15s. Use the controls to pause, resume, or trigger immediately.
         </p>
       </div>
     </div>

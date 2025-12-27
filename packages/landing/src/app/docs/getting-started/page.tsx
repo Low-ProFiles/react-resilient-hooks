@@ -79,7 +79,7 @@ function ProductImage({ product }) {
             Poll for updates less frequently on slow networks:
           </p>
           <pre className="bg-gray-900 text-gray-100 rounded-xl p-4 overflow-x-auto text-sm">
-            <code>{`import { useConnectionAwarePolling } from 'react-resilient-hooks';
+            <code>{`import { useAdaptivePolling } from 'react-resilient-hooks';
 
 function LivePrices() {
   const [prices, setPrices] = useState([]);
@@ -91,7 +91,7 @@ function LivePrices() {
 
   // Polls every 5s on 4G, 10s on 3G, 15s on 2G
   // Automatically pauses when offline
-  useConnectionAwarePolling(fetchPrices, {
+  useAdaptivePolling(fetchPrices, {
     baseInterval: 5000,
     pauseWhenOffline: true,
   });
@@ -173,8 +173,8 @@ interface NetworkStatus {
               Learn about network-aware image loading
             </p>
           </Link>
-          <Link href="/docs/hooks/use-connection-aware-polling" className="block p-4 bg-gray-50 dark:bg-zinc-800 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors">
-            <h3 className="font-semibold text-purple-600 dark:text-purple-400 mb-1">useConnectionAwarePolling</h3>
+          <Link href="/docs/hooks/use-adaptive-polling" className="block p-4 bg-gray-50 dark:bg-zinc-800 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors">
+            <h3 className="font-semibold text-purple-600 dark:text-purple-400 mb-1">useAdaptivePolling</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Set up smart polling for your application
             </p>

@@ -37,8 +37,8 @@ export default function DocsPage() {
               Automatically select image quality based on network conditions
             </p>
           </Link>
-          <Link href="/docs/hooks/use-connection-aware-polling" className="block p-4 bg-gray-50 dark:bg-zinc-800 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors">
-            <h3 className="font-semibold text-purple-600 dark:text-purple-400 mb-1">useConnectionAwarePolling</h3>
+          <Link href="/docs/hooks/use-adaptive-polling" className="block p-4 bg-gray-50 dark:bg-zinc-800 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors">
+            <h3 className="font-semibold text-purple-600 dark:text-purple-400 mb-1">useAdaptivePolling</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Smart polling that adapts to network speed and pauses when offline
             </p>

@@ -5,7 +5,7 @@ import { UseConnectionAwarePollingDemo } from '../../../../components/demos/UseC
 export default function UseConnectionAwarePollingPage() {
   return (
     <div className="max-w-4xl">
-      <h1 className="text-3xl font-bold mb-4">useConnectionAwarePolling</h1>
+      <h1 className="text-3xl font-bold mb-4">useAdaptivePolling</h1>
       <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg">
         Smart polling that adapts its frequency based on network conditions and automatically pauses when offline.
       </p>
@@ -30,7 +30,7 @@ export default function UseConnectionAwarePollingPage() {
       <section className="mb-12">
         <h2 className="text-xl font-semibold mb-4">Usage</h2>
         <pre className="bg-gray-900 text-gray-100 rounded-xl p-4 overflow-x-auto text-sm">
-          <code>{`import { useConnectionAwarePolling } from 'react-resilient-hooks';
+          <code>{`import { useAdaptivePolling } from 'react-resilient-hooks';
 
 function MyComponent() {
   const fetchData = async () => {
@@ -38,7 +38,7 @@ function MyComponent() {
     return response.json();
   };
 
-  const { isPolling, errorCount, pause, resume } = useConnectionAwarePolling(
+  const { isPolling, errorCount, pause, resume } = useAdaptivePolling(
     fetchData,
     {
       baseInterval: 5000,

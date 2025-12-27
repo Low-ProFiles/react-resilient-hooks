@@ -8,18 +8,17 @@ const imageSources = {
   high: 'https://picsum.photos/600/600',
 };
 
+const qualityConfig = {
+  low: { label: 'Low', color: 'text-red-600', bg: 'bg-red-100 dark:bg-red-900', size: '150px' },
+  medium: { label: 'Medium', color: 'text-yellow-600', bg: 'bg-yellow-100 dark:bg-yellow-900', size: '300px' },
+  high: { label: 'High', color: 'text-green-600', bg: 'bg-green-100 dark:bg-green-900', size: '600px' },
+};
+
 export function UseAdaptiveImageDemo() {
   const { data: network } = useNetworkStatus();
-  const imageUrl = useAdaptiveImage(imageSources);
+  const { src: imageUrl, quality: selectedQuality } = useAdaptiveImage(imageSources);
 
-  const getQualityInfo = () => {
-    const type = network?.effectiveType;
-    if (type?.includes('2g')) return { label: 'Low (2G)', color: 'text-red-600', bg: 'bg-red-100 dark:bg-red-900', size: '150px' };
-    if (type?.includes('3g')) return { label: 'Medium (3G)', color: 'text-yellow-600', bg: 'bg-yellow-100 dark:bg-yellow-900', size: '300px' };
-    return { label: 'High (4G)', color: 'text-green-600', bg: 'bg-green-100 dark:bg-green-900', size: '600px' };
-  };
-
-  const quality = getQualityInfo();
+  const quality = qualityConfig[selectedQuality];
 
   return (
     <div className="space-y-6">

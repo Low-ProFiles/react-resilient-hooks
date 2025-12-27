@@ -1,9 +1,9 @@
 // Main hooks
 export { useAdaptiveImage } from './hooks/useAdaptiveImage';
-export type { AdaptiveImageSource, AdaptiveImageOptions } from './hooks/useAdaptiveImage';
+export type { AdaptiveImageSource, AdaptiveImageOptions, AdaptiveImageResult, ImageQuality } from './hooks/useAdaptiveImage';
 
-export { useConnectionAwarePolling } from './hooks/useConnectionAwarePolling';
-export type { PollingOptions, PollingState } from './hooks/useConnectionAwarePolling';
+export { useAdaptivePolling } from './hooks/useAdaptivePolling';
+export type { PollingOptions, PollingState, PollingControls } from './hooks/useAdaptivePolling';
 
 export { useBackgroundSync } from './hooks/useBackgroundSync';
 export type { QueuedReq, BackgroundSyncOptions } from './hooks/useBackgroundSync';

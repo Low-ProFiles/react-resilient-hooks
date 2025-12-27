@@ -10,6 +10,8 @@ export type PollingOptions = {
   jitter?: boolean;
   /** Pause polling when offline (default: true) */
   pauseWhenOffline?: boolean;
+  /** Start polling immediately (default: true) */
+  enabled?: boolean;
   /** Callback when polling encounters an error */
   onError?: (error: Error) => void;
 };
@@ -17,12 +19,25 @@ export type PollingOptions = {
 export type PollingState = {
   /** Whether polling is currently active */
   isPolling: boolean;
+  /** Whether polling is manually paused */
+  isPaused: boolean;
   /** Current interval being used (in ms) */
   currentInterval: number;
   /** Number of consecutive errors */
   errorCount: number;
   /** Last error encountered */
   lastError: Error | null;
+};
+
+export type PollingControls = {
+  /** Current polling state */
+  state: PollingState;
+  /** Pause polling */
+  pause: () => void;
+  /** Resume polling */
+  resume: () => void;
+  /** Immediately trigger the callback */
+  triggerNow: () => Promise<void>;
 };
 
 function calculateInterval(
@@ -36,22 +51,25 @@ function calculateInterval(
   return Math.min(baseInterval * 3, maxInterval);
 }
 
-export function useConnectionAwarePolling(
+export function useAdaptivePolling(
   callback: () => Promise<void> | void,
   opts: PollingOptions = {}
-): PollingState {
+): PollingControls {
   const {
     baseInterval = 5000,
     maxInterval = 60000,
     jitter = true,
     pauseWhenOffline = true,
+    enabled = true,
     onError
   } = opts;
 
   const { data: networkStatus } = useNetworkStatus();
   const savedCallback = useRef(callback);
+  const [isPaused, setIsPaused] = useState(!enabled);
   const [state, setState] = useState<PollingState>({
     isPolling: false,
+    isPaused: !enabled,
     currentInterval: baseInterval,
     errorCount: 0,
     lastError: null
@@ -80,7 +98,27 @@ export function useConnectionAwarePolling(
     }
   }, [onError]);
 
+  const pause = useCallback(() => {
+    setIsPaused(true);
+    setState(prev => ({ ...prev, isPaused: true, isPolling: false }));
+  }, []);
+
+  const resume = useCallback(() => {
+    setIsPaused(false);
+    setState(prev => ({ ...prev, isPaused: false }));
+  }, []);
+
+  const triggerNow = useCallback(async () => {
+    await tick();
+  }, [tick]);
+
   useEffect(() => {
+    // Don't poll if manually paused
+    if (isPaused) {
+      setState(prev => ({ ...prev, isPolling: false }));
+      return;
+    }
+
     // Pause when offline if configured
     if (pauseWhenOffline && !networkStatus?.online) {
       setState(prev => ({ ...prev, isPolling: false }));
@@ -108,7 +146,7 @@ export function useConnectionAwarePolling(
       clearInterval(id);
       setState(prev => ({ ...prev, isPolling: false }));
     };
-  }, [networkStatus?.online, networkStatus?.effectiveType, baseInterval, maxInterval, jitter, pauseWhenOffline, tick]);
+  }, [isPaused, networkStatus?.online, networkStatus?.effectiveType, baseInterval, maxInterval, jitter, pauseWhenOffline, tick]);
 
-  return state;
+  return { state, pause, resume, triggerNow };
 }

@@ -17,8 +17,8 @@
       "title": "useAdaptiveImage",
       "description": "네트워크 속도에 따라 자동으로 이미지 품질을 선택합니다. 2G에서는 저해상도, 4G에서는 고해상도 이미지를 제공합니다."
     },
-    "useConnectionAwarePolling": {
-      "title": "useConnectionAwarePolling",
+    "useAdaptivePolling": {
+      "title": "useAdaptivePolling",
       "description": "네트워크 상태에 따라 폴링 주기를 조절하는 스마트 폴링. 오프라인시 일시정지, 좋은 연결에서는 더 빠르게."
     },
     "useBackgroundSync": {

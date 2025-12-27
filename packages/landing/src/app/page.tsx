@@ -303,10 +303,10 @@ export default function Home() {
             </FeatureCard>
 
             <FeatureCard
-              title={t.features.useConnectionAwarePolling.title}
-              description={t.features.useConnectionAwarePolling.description}
+              title={t.features.useAdaptivePolling.title}
+              description={t.features.useAdaptivePolling.description}
               icon="🔄"
-              href="/docs/hooks/use-connection-aware-polling"
+              href="/docs/hooks/use-adaptive-polling"
               learnMore={locale === 'ko' ? '자세히 보기' : 'Learn more'}
             >
               <PollingPreview intervalLabel={locale === 'ko' ? '주기:' : 'Every'} />

@@ -17,8 +17,8 @@
       "title": "useAdaptiveImage",
       "description": "Automatically select image quality based on network speed. Serve low-res images on 2G, high-res on 4G."
     },
-    "useConnectionAwarePolling": {
-      "title": "useConnectionAwarePolling",
+    "useAdaptivePolling": {
+      "title": "useAdaptivePolling",
       "description": "Smart polling that adapts frequency to network conditions. Pauses when offline, faster on good connections."
     },
     "useBackgroundSync": {

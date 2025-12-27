@@ -16,7 +16,7 @@ const navigation: NavItem[] = [
     label: 'Hooks',
     children: [
       { label: 'useAdaptiveImage', href: '/docs/hooks/use-adaptive-image' },
-      { label: 'useConnectionAwarePolling', href: '/docs/hooks/use-connection-aware-polling' },
+      { label: 'useAdaptivePolling', href: '/docs/hooks/use-adaptive-polling' },
       { label: 'useBackgroundSync', href: '/docs/hooks/use-background-sync' },
       { label: 'useNetworkStatus', href: '/docs/hooks/use-network-status' },
     ],
