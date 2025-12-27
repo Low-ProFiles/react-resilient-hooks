@@ -1,6 +1,13 @@
 import { QueueStore } from './types';
 import { openDB, promisifyRequest } from '../core/idbUtils';
 
+/**
+ * In-memory queue store implementation.
+ * Fast but not persistent - data is lost on page refresh.
+ * Best for development and testing.
+ *
+ * @typeParam T - Type of items stored in the queue
+ */
 export class MemoryQueueStore<T> implements QueueStore<T> {
   private queue: T[] = [];
 
@@ -23,13 +30,38 @@ export class MemoryQueueStore<T> implements QueueStore<T> {
   async size(): Promise<number> {
     return this.queue.length;
   }
+
+  async clear(): Promise<void> {
+    this.queue = [];
+  }
 }
 
+/**
+ * IndexedDB-backed queue store implementation.
+ * Persistent storage that survives page refreshes and browser restarts.
+ * Recommended for production use with useBackgroundSync.
+ *
+ * @typeParam T - Type of items stored (must have an 'id' property)
+ *
+ * @example
+ * ```ts
+ * const store = new IndexedDBQueueStore<QueuedReq>('my-app-queue', 'requests');
+ *
+ * await store.enqueue({ id: '1', url: '/api/sync', options: { method: 'POST' } });
+ * const item = await store.dequeue();
+ * ```
+ */
 export class IndexedDBQueueStore<T extends { id: string }> implements QueueStore<T> {
   private dbName: string;
   private storeName: string;
   private dbPromise: Promise<IDBDatabase> | null = null;
 
+  /**
+   * Create a new IndexedDB queue store.
+   *
+   * @param dbName - Name of the IndexedDB database (default: 'resilient-queue')
+   * @param storeName - Name of the object store (default: 'queue')
+   */
   constructor(dbName = 'resilient-queue', storeName = 'queue') {
     this.dbName = dbName;
     this.storeName = storeName;
@@ -83,6 +115,13 @@ export class IndexedDBQueueStore<T extends { id: string }> implements QueueStore
     const tx = db.transaction(this.storeName, 'readonly');
     const store = tx.objectStore(this.storeName);
     return promisifyRequest(store.count());
+  }
+
+  async clear(): Promise<void> {
+    const db = await this.getDB();
+    const tx = db.transaction(this.storeName, 'readwrite');
+    const store = tx.objectStore(this.storeName);
+    await promisifyRequest(store.clear());
   }
 }
 

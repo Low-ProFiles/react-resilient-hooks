@@ -196,8 +196,17 @@ var MemoryQueueStore = class {
   async size() {
     return this.queue.length;
   }
+  async clear() {
+    this.queue = [];
+  }
 };
 var IndexedDBQueueStore = class {
+  /**
+   * Create a new IndexedDB queue store.
+   *
+   * @param dbName - Name of the IndexedDB database (default: 'resilient-queue')
+   * @param storeName - Name of the object store (default: 'queue')
+   */
   constructor(dbName = "resilient-queue", storeName = "queue") {
     this.dbPromise = null;
     this.dbName = dbName;
@@ -247,6 +256,12 @@ var IndexedDBQueueStore = class {
     const store = tx.objectStore(this.storeName);
     return promisifyRequest(store.count());
   }
+  async clear() {
+    const db = await this.getDB();
+    const tx = db.transaction(this.storeName, "readwrite");
+    const store = tx.objectStore(this.storeName);
+    await promisifyRequest(store.clear());
+  }
 };
 
 // src/utils/registerServiceWorker.ts
@@ -274,14 +289,30 @@ async function requestBackgroundSync(tag = "rrh-background-sync") {
 }
 
 // src/hooks/useBackgroundSync.ts
+var defaultRetryDelay = (attempt) => {
+  return Math.min(1e3 * Math.pow(2, attempt), 3e4);
+};
+var defaultShouldRetry = (error) => {
+  const message = error.message;
+  if (message.startsWith("HTTP 5")) return true;
+  if (message.includes("network") || message.includes("fetch")) return true;
+  return false;
+};
 var defaultQueueStore = new IndexedDBQueueStore();
 function useBackgroundSync(options = {}) {
   const {
     queueStore = defaultQueueStore,
     eventBus,
     onSuccess,
-    onError
+    onError,
+    onRetry,
+    retry = {}
   } = options;
+  const {
+    maxRetries = 3,
+    retryDelay = defaultRetryDelay,
+    shouldRetry = defaultShouldRetry
+  } = retry;
   const [status, setStatus] = react.useState({ status: "idle" });
   const isFlushing = react.useRef(false);
   const updateStatus = react.useCallback((newStatus) => {
@@ -293,7 +324,8 @@ function useBackgroundSync(options = {}) {
       id: `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
       url,
       options: options2,
-      meta
+      meta,
+      retryCount: 0
     };
     await queueStore.enqueue(item);
     try {
@@ -302,6 +334,7 @@ function useBackgroundSync(options = {}) {
     }
     return item.id;
   }, [queueStore]);
+  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const flush = react.useCallback(async () => {
     if (isFlushing.current) return;
     isFlushing.current = true;
@@ -310,24 +343,39 @@ function useBackgroundSync(options = {}) {
       while (!await queueStore.isEmpty()) {
         const req = await queueStore.dequeue();
         if (!req) break;
+        let success = false;
+        let lastError = null;
+        const currentRetryCount = req.retryCount ?? 0;
         try {
           const res = await fetch(req.url, req.options);
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          success = true;
           onSuccess?.(req);
         } catch (err) {
-          const error = err instanceof Error ? err : new Error(String(err));
-          onError?.(req, error);
-          await queueStore.enqueue(req);
-          updateStatus({ status: "error", error });
-          isFlushing.current = false;
-          return;
+          lastError = err instanceof Error ? err : new Error(String(err));
+          if (currentRetryCount < maxRetries && shouldRetry(lastError, req)) {
+            const delayMs = retryDelay(currentRetryCount);
+            onRetry?.(req, currentRetryCount + 1, lastError);
+            await delay(delayMs);
+            await queueStore.enqueue({
+              ...req,
+              retryCount: currentRetryCount + 1
+            });
+          } else {
+            onError?.(req, lastError);
+            updateStatus({ status: "error", error: lastError });
+            isFlushing.current = false;
+            return;
+          }
+        }
+        if (success) {
         }
       }
       updateStatus({ status: "success" });
     } finally {
       isFlushing.current = false;
     }
-  }, [queueStore, updateStatus, onSuccess, onError]);
+  }, [queueStore, updateStatus, onSuccess, onError, onRetry, maxRetries, retryDelay, shouldRetry]);
   react.useEffect(() => {
     const onOnline = () => {
       flush();
@@ -343,12 +391,23 @@ var EventBus = class {
   constructor() {
     this.listeners = [];
   }
+  /**
+   * Subscribe to events on this bus.
+   *
+   * @param listener - Function to call when an event is published
+   * @returns Unsubscribe function to stop receiving events
+   */
   subscribe(listener) {
     this.listeners.push(listener);
     return () => {
       this.listeners = this.listeners.filter((l) => l !== listener);
     };
   }
+  /**
+   * Publish an event to all subscribers.
+   *
+   * @param event - The event to broadcast
+   */
   publish(event) {
     this.listeners.forEach((listener) => listener(event));
   }

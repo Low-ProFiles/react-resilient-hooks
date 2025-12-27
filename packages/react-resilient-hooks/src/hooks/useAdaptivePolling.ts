@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react"
 import { useNetworkStatus } from "./useNetworkStatus"
 
+/**
+ * Configuration options for useAdaptivePolling hook.
+ */
 export type PollingOptions = {
   /** Base polling interval in ms (default: 5000) */
   baseInterval?: number;
@@ -16,6 +19,9 @@ export type PollingOptions = {
   onError?: (error: Error) => void;
 };
 
+/**
+ * Current state of the polling operation.
+ */
 export type PollingState = {
   /** Whether polling is currently active */
   isPolling: boolean;
@@ -29,6 +35,9 @@ export type PollingState = {
   lastError: Error | null;
 };
 
+/**
+ * Controls and state returned by useAdaptivePolling hook.
+ */
 export type PollingControls = {
   /** Current polling state */
   state: PollingState;
@@ -51,6 +60,34 @@ function calculateInterval(
   return Math.min(baseInterval * 3, maxInterval);
 }
 
+/**
+ * Hook for adaptive polling that adjusts interval based on network conditions.
+ * Automatically slows down polling on slower connections and pauses when offline.
+ *
+ * @param callback - Function to call on each polling interval
+ * @param opts - Configuration options for polling behavior
+ * @returns Polling state and control functions (pause, resume, triggerNow)
+ *
+ * @example
+ * ```tsx
+ * const { state, pause, resume, triggerNow } = useAdaptivePolling(
+ *   async () => {
+ *     const data = await fetchLatestData();
+ *     setData(data);
+ *   },
+ *   { baseInterval: 5000, pauseWhenOffline: true }
+ * );
+ *
+ * return (
+ *   <div>
+ *     <span>Polling: {state.isPolling ? 'Active' : 'Paused'}</span>
+ *     <button onClick={pause}>Pause</button>
+ *     <button onClick={resume}>Resume</button>
+ *     <button onClick={triggerNow}>Refresh Now</button>
+ *   </div>
+ * );
+ * ```
+ */
 export function useAdaptivePolling(
   callback: () => Promise<void> | void,
   opts: PollingOptions = {}

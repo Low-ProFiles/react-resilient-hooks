@@ -6,7 +6,7 @@ export { useAdaptivePolling } from './hooks/useAdaptivePolling';
 export type { PollingOptions, PollingState, PollingControls } from './hooks/useAdaptivePolling';
 
 export { useBackgroundSync } from './hooks/useBackgroundSync';
-export type { QueuedReq, BackgroundSyncOptions } from './hooks/useBackgroundSync';
+export type { QueuedReq, BackgroundSyncOptions, RetryPolicy } from './hooks/useBackgroundSync';
 
 // Network status hook (used internally, but also exported for advanced usage)
 export { useNetworkStatus } from './hooks/useNetworkStatus';
