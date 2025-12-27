@@ -14,8 +14,7 @@
     "next-pwa": "^5.6.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "@resilient/core": "0.2.0",
-    "@resilient/utils": "0.2.0"
+    "react-resilient-hooks": "2.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

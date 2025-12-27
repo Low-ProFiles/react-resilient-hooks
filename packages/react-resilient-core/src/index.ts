@@ -9,6 +9,5 @@ export * from './stores/implementations';
 // IndexedDB utilities
 export * from './core/idbUtils';
 
-// Service Worker
-export * from './sw/service-worker';
+// Service Worker types (only types, not runtime code)
 export * from './sw/types';
