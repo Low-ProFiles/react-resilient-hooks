@@ -1,5 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from "react"
-import { ResilientResult, QueueStore, IndexedDBQueueStore, EventBus } from "@resilient/core"
+import { ResilientResult } from "../core/types"
+import { QueueStore } from "../stores/types"
+import { IndexedDBQueueStore } from "../stores/implementations"
+import { EventBus } from "../core/eventBus"
 import { requestBackgroundSync } from "../utils/registerServiceWorker"
 
 export type QueuedReq = { id: string; url: string; options?: RequestInit; meta?: Record<string, unknown> }

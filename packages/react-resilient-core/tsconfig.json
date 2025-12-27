@@ -9,10 +9,12 @@
     "esModuleInterop": true,
     "declaration": true,
     "skipLibCheck": true,
+    "types": [],
     "lib": [
       "dom",
       "dom.iterable",
-      "esnext"
+      "esnext",
+      "webworker"
     ]
   },
   "include": ["src"],

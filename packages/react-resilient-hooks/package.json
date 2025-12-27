@@ -1,0 +1,48 @@
+{
+  "name": "react-resilient-hooks",
+  "version": "2.0.0",
+  "description": "React hooks for resilient applications - adaptive image loading, connection-aware polling, and background sync for unreliable networks.",
+  "files": [
+    "dist"
+  ],
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "jest"
+  },
+  "keywords": [
+    "react",
+    "hooks",
+    "offline",
+    "network",
+    "resilient",
+    "background-sync",
+    "adaptive-image",
+    "polling",
+    "low-bandwidth"
+  ],
+  "author": "Low-ProFiles",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Low-ProFiles/react-resilient-hooks"
+  },
+  "homepage": "https://low-profiles.github.io/react-resilient-hooks",
+  "devDependencies": {
+    "@types/react": "^19.1.13",
+    "typescript": "^5.4.5",
+    "tsup": "^8.0.2"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0"
+  }
+}

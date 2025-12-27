@@ -1,15 +1,13 @@
-export * from './core/defaultProviders';
-export * from './core/idbUtils';
-export * from './core/indexedDBProvider';
-export * from './core/security';
-export * from './core/storageFactory';
-export * from './core/storageProvider';
-export * from './core/eventBus';
-export * from './core/logger';
+// Core types
 export * from './core/types';
-export * from './policies/types';
-export * from './policies/implementations';
+export * from './core/eventBus';
+
+// Queue stores for background sync
 export * from './stores/types';
 export * from './stores/implementations';
-export * from './sw/service-worker';
+
+// IndexedDB utilities
+export * from './core/idbUtils';
+
+// Service Worker types (only types, not runtime code)
 export * from './sw/types';
