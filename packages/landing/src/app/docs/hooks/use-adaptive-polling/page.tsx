@@ -1,20 +1,20 @@
 'use client';
 
-import { UseConnectionAwarePollingDemo } from '../../../../components/demos/UseConnectionAwarePollingDemo';
+import { UseAdaptivePollingDemo } from '../../../../components/demos/UseAdaptivePollingDemo';
 
-export default function UseConnectionAwarePollingPage() {
+export default function UseAdaptivePollingPage() {
   return (
     <div className="max-w-4xl">
       <h1 className="text-3xl font-bold mb-4">useAdaptivePolling</h1>
       <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg">
-        Smart polling that adapts its frequency based on network conditions and automatically pauses when offline.
+        Smart polling that adapts its frequency based on network conditions with pause/resume controls.
       </p>
 
       {/* Demo */}
       <section className="mb-12">
         <h2 className="text-xl font-semibold mb-4">Live Demo</h2>
         <div className="border border-gray-200 dark:border-zinc-700 rounded-2xl p-6 bg-white dark:bg-zinc-900">
-          <UseConnectionAwarePollingDemo />
+          <UseAdaptivePollingDemo />
         </div>
       </section>
 
@@ -38,22 +38,22 @@ function MyComponent() {
     return response.json();
   };
 
-  const { isPolling, errorCount, pause, resume } = useAdaptivePolling(
+  const { state, pause, resume, triggerNow } = useAdaptivePolling(
     fetchData,
     {
       baseInterval: 5000,
       maxInterval: 30000,
-      jitter: true,
       pauseWhenOffline: true,
     }
   );
 
   return (
     <div>
-      <p>Status: {isPolling ? 'Polling' : 'Paused'}</p>
-      <p>Errors: {errorCount}</p>
+      <p>Status: {state.isPolling ? 'Polling' : 'Paused'}</p>
+      <p>Errors: {state.errorCount}</p>
       <button onClick={pause}>Pause</button>
       <button onClick={resume}>Resume</button>
+      <button onClick={triggerNow}>Fetch Now</button>
     </div>
   );
 }`}</code>
@@ -67,14 +67,14 @@ function MyComponent() {
           <h3 className="font-semibold mb-3">Parameters</h3>
           <div className="space-y-4">
             <div>
-              <code className="text-blue-600 dark:text-blue-400">fetchFn</code>
-              <span className="text-gray-500 ml-2">{'() => Promise<void>'}</span>
+              <code className="text-blue-600 dark:text-blue-400">callback</code>
+              <span className="text-gray-500 ml-2">{'() => Promise<void> | void'}</span>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                The async function to call on each poll interval.
+                The function to call on each poll interval.
               </p>
             </div>
             <div>
-              <code className="text-blue-600 dark:text-blue-400">options</code>
+              <code className="text-blue-600 dark:text-blue-400">options?</code>
               <span className="text-gray-500 ml-2">PollingOptions</span>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 Configuration options for the polling behavior.
@@ -85,31 +85,38 @@ function MyComponent() {
           <h3 className="font-semibold mb-3 mt-6">Options</h3>
           <div className="space-y-4">
             <div>
-              <code className="text-blue-600 dark:text-blue-400">baseInterval</code>
+              <code className="text-blue-600 dark:text-blue-400">baseInterval?</code>
               <span className="text-gray-500 ml-2">number</span>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Base polling interval in milliseconds (used on 4G/WiFi).
+                Base polling interval in ms (used on 4G/WiFi). Default: 5000.
               </p>
             </div>
             <div>
               <code className="text-blue-600 dark:text-blue-400">maxInterval?</code>
               <span className="text-gray-500 ml-2">number</span>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Maximum interval cap in milliseconds. Defaults to baseInterval * 6.
+                Maximum interval cap in ms. Default: 60000.
               </p>
             </div>
             <div>
               <code className="text-blue-600 dark:text-blue-400">jitter?</code>
               <span className="text-gray-500 ml-2">boolean</span>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Add random jitter to prevent thundering herd. Defaults to false.
+                Add random jitter to prevent thundering herd. Default: true.
               </p>
             </div>
             <div>
               <code className="text-blue-600 dark:text-blue-400">pauseWhenOffline?</code>
               <span className="text-gray-500 ml-2">boolean</span>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Automatically pause polling when offline. Defaults to true.
+                Automatically pause polling when offline. Default: true.
+              </p>
+            </div>
+            <div>
+              <code className="text-blue-600 dark:text-blue-400">enabled?</code>
+              <span className="text-gray-500 ml-2">boolean</span>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Start polling immediately. Default: true.
               </p>
             </div>
           </div>
@@ -117,31 +124,31 @@ function MyComponent() {
           <h3 className="font-semibold mb-3 mt-6">Returns</h3>
           <div className="space-y-4">
             <div>
-              <code className="text-green-600 dark:text-green-400">isPolling</code>
-              <span className="text-gray-500 ml-2">boolean</span>
+              <code className="text-green-600 dark:text-green-400">state</code>
+              <span className="text-gray-500 ml-2">PollingState</span>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Whether polling is currently active.
-              </p>
-            </div>
-            <div>
-              <code className="text-green-600 dark:text-green-400">errorCount</code>
-              <span className="text-gray-500 ml-2">number</span>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Number of consecutive errors that have occurred.
+                Current polling state (isPolling, isPaused, currentInterval, errorCount, lastError).
               </p>
             </div>
             <div>
               <code className="text-green-600 dark:text-green-400">pause</code>
               <span className="text-gray-500 ml-2">{'() => void'}</span>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Function to manually pause polling.
+                Pause polling manually.
               </p>
             </div>
             <div>
               <code className="text-green-600 dark:text-green-400">resume</code>
               <span className="text-gray-500 ml-2">{'() => void'}</span>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Function to manually resume polling.
+                Resume polling manually.
+              </p>
+            </div>
+            <div>
+              <code className="text-green-600 dark:text-green-400">triggerNow</code>
+              <span className="text-gray-500 ml-2">{'() => Promise<void>'}</span>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Immediately trigger the callback without waiting for next interval.
               </p>
             </div>
           </div>
@@ -162,7 +169,7 @@ function MyComponent() {
             <li><strong>Offline:</strong> Pauses polling entirely</li>
           </ul>
           <p className="text-gray-600 dark:text-gray-400 mt-4">
-            When jitter is enabled, a random delay of 0-20% is added to prevent multiple clients from polling at the exact same time (thundering herd problem).
+            When jitter is enabled, a random delay of 0-10% is added to prevent multiple clients from polling at the exact same time.
           </p>
         </div>
       </section>

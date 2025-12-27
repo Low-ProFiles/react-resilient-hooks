@@ -39,9 +39,14 @@ const imageSources = {
 };
 
 function MyComponent() {
-  const imageUrl = useAdaptiveImage(imageSources);
+  const { src, quality } = useAdaptiveImage(imageSources);
 
-  return <img src={imageUrl} alt="Adaptive image" />;
+  return (
+    <div>
+      <img src={src} alt="Adaptive image" />
+      <p>Current quality: {quality}</p>
+    </div>
+  );
 }`}</code>
         </pre>
       </section>
@@ -54,7 +59,7 @@ function MyComponent() {
           <div className="space-y-4">
             <div>
               <code className="text-blue-600 dark:text-blue-400">sources</code>
-              <span className="text-gray-500 ml-2">{'{ low: string, medium: string, high: string }'}</span>
+              <span className="text-gray-500 ml-2">{'{ low: string, medium?: string, high: string }'}</span>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 Object containing URLs for different image qualities.
               </p>
@@ -74,17 +79,34 @@ function MyComponent() {
               <code className="text-blue-600 dark:text-blue-400">ssrDefault?</code>
               <span className="text-gray-500 ml-2">&apos;low&apos; | &apos;medium&apos; | &apos;high&apos;</span>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Default quality to use during SSR. Defaults to &apos;medium&apos;.
+                Default quality to use during SSR. Defaults to &apos;high&apos;.
+              </p>
+            </div>
+            <div>
+              <code className="text-blue-600 dark:text-blue-400">thresholds?</code>
+              <span className="text-gray-500 ml-2">{'{ low: number, medium: number }'}</span>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Custom downlink thresholds (Mbps). Defaults to {'{ low: 0.5, medium: 1.5 }'}.
               </p>
             </div>
           </div>
 
           <h3 className="font-semibold mb-3 mt-6">Returns</h3>
-          <div>
-            <code className="text-green-600 dark:text-green-400">string</code>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              The URL of the selected image based on current network conditions.
-            </p>
+          <div className="space-y-4">
+            <div>
+              <code className="text-green-600 dark:text-green-400">src</code>
+              <span className="text-gray-500 ml-2">string</span>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                The URL of the selected image based on current network conditions.
+              </p>
+            </div>
+            <div>
+              <code className="text-green-600 dark:text-green-400">quality</code>
+              <span className="text-gray-500 ml-2">&apos;low&apos; | &apos;medium&apos; | &apos;high&apos;</span>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                The quality level that was selected.
+              </p>
+            </div>
           </div>
         </div>
       </section>

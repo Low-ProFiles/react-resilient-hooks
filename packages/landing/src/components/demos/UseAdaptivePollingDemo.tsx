@@ -3,7 +3,7 @@
 import { useAdaptivePolling, useNetworkStatus } from 'react-resilient-hooks';
 import { useState } from 'react';
 
-export function UseConnectionAwarePollingDemo() {
+export function UseAdaptivePollingDemo() {
   const { data: network } = useNetworkStatus();
   const [data, setData] = useState<number | null>(null);
   const [history, setHistory] = useState<{ value: number; time: string }[]>([]);
