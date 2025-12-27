@@ -1,56 +1,13 @@
 # React Resilient Hooks
 
-A set of React hooks designed to handle unreliable network, offline caching, background sync, adaptive polling, and connection-aware tasks.
+A lightweight set of React hooks designed for building resilient applications that handle unreliable networks gracefully.
 
 ## Features
 
-- `useNetworkStatus` : Track online/offline status
-- `useOnline`: Get a boolean value indicating whether the user is online or offline.
-- `useRetryRequest` : Automatic request retry with exponential backoff
-- `useBackgroundSync` : Queue network requests for later execution with IndexedDB or LocalStorage, optionally integrated with Service Worker
-- `useOfflineCache` : Cache API results offline with TTL and sensitive data redaction
-- `useAdaptiveImage` : Load images adaptively based on network speed
-- `useConnectionAwarePolling` : Poll data intelligently based on network quality
-- `useQueue` : Simple FIFO/LIFO queue utility
-- `useWebsocket`: Resilient WebSocket connection.
-
-## Getting Started
-
-To use this library, you need to wrap your application with the `ResilientProvider`.
-
-```javascript
-import { ResilientProvider } from 'react-resilient-hooks';
-
-function App() {
-  return (
-    <ResilientProvider storageType="encrypted-local" passphrase="your-secret-passphrase">
-      {/* Your application code here */}
-    </ResilientProvider>
-  );
-}
-```
-
-## Development (Monorepo)
-
-This project is a monorepo managed with npm workspaces. The packages are located in the `packages` directory.
-
--   `packages/hooks`: The main `react-resilient-hooks` library code.
--   `packages/landing`: The Next.js landing page for the project.
-
-### Running the Landing Page
-
-To run the landing page for local development:
-
-1.  **Navigate to the project root directory.**
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
-3.  **Run the development server:**
-    ```bash
-    npm run dev --workspace=react-resilient-hooks-landing
-    ```
-    This will start the landing page on `http://localhost:3000`.
+- **useNetworkStatus** - Track online/offline status and connection quality
+- **useAdaptiveImage** - Load images adaptively based on network speed
+- **useAdaptivePolling** - Smart polling with pause/resume controls
+- **useBackgroundSync** - Queue failed requests for later execution
 
 ## Installation
 
@@ -61,240 +18,199 @@ npm install react-resilient-hooks
 ## Usage Examples
 
 ### 1. useNetworkStatus
-`useNetworkStatus` tracks the user's online/offline status.
 
-```javascript
-import { useNetworkStatus } from "react-resilient-hooks"
+Track the user's network status including online/offline state and connection quality.
 
-function StatusIndicator() {
-  const { data: networkStatus } = useNetworkStatus()
-  return <div>{networkStatus?.online ? "Online" : "Offline"}</div>
-}
-```
+```tsx
+import { useNetworkStatus } from 'react-resilient-hooks';
 
-**Options**: none
-
-### 2. useOnline
-`useOnline` returns a boolean value indicating whether the user is online or offline.
-
-```javascript
-import { useOnline } from "react-resilient-hooks"
-
-function StatusIndicator() {
-  const isOnline = useOnline()
-  return <div>{isOnline ? "Online" : "Offline"}</div>
-}
-```
-
-**Options**: none
-
-### 3. useRetryRequest
-`useRetryRequest` automatically retries a failed fetch request with exponential backoff.
-
-```javascript
-import { useRetryRequest } from "react-resilient-hooks"
-
-function DataComponent() {
-  const { data, error, loading, retry } = useRetryRequest("/api/data", {}, { retries: 3 });
-
-  if (loading) return <p>Loading...</p>;
-  if (error) return <button onClick={retry}>Retry</button>;
-  return <pre>{JSON.stringify(data, null, 2)}</pre>;
-}
-```
-
-**Options**:
-- `retries` (number): max retry attempts, default `3`
-- `retryDelay` (number): initial delay in ms, default `1000`
-- `backoff` ("fixed" | "exponential"): backoff strategy, default `"exponential"`
-
-### 4. useBackgroundSync
-`useBackgroundSync` queues failed requests and syncs them when the network is back online. It can be integrated with a Service Worker for background synchronization.
-
-```javascript
-import { useBackgroundSync, registerServiceWorker } from "react-resilient-hooks"
-
-// Register the service worker
-await registerServiceWorker("/service-worker.js")
-
-function Form() {
-  const { enqueue, queue } = useBackgroundSync()
-
-  const handleSubmit = async () => {
-    try {
-      await fetch("/api/submit", { method: "POST", body: JSON.stringify({ foo: "bar" }) })
-    } catch {
-      // Enqueue the request if it fails
-      enqueue("/api/submit", { method: "POST", body: JSON.stringify({ foo: "bar" }) })
-    }
-  }
+function NetworkIndicator() {
+  const { data: network } = useNetworkStatus();
 
   return (
     <div>
-      <button onClick={handleSubmit}>Submit</button>
-      <p>Pending requests: {queue.length}</p>
+      <p>Status: {network?.online ? 'Online' : 'Offline'}</p>
+      <p>Connection: {network?.effectiveType}</p>
+      <p>Speed: {network?.downlink} Mbps</p>
     </div>
-  )
-}
-```
-
-**Options**:
-- `redactKeys` (string[]): additional sensitive keys to redact from the request body, default `[]`
-- `storeBody` (boolean): whether to store the request body in the queue, default `false`
-
-### 5. useOfflineCache
-`useOfflineCache` caches API responses and serves them when the user is offline.
-
-```javascript
-import { useOfflineCache } from "react-resilient-hooks"
-
-function UserProfile() {
-  const { data, loading, error } = useOfflineCache(
-    "user_profile",
-    () => fetch("/api/user").then(r => r.json()),
-    { ttlMs: 60000, redactKeys: ["token"] }
   );
-
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error fetching data.</p>;
-
-  return <h1>Welcome, {data.name}</h1>;
 }
 ```
 
-**Options**:
-- `ttlMs` (number): cache time-to-live in ms, default `3600000` (1 hour)
-- `shouldCache` ((value: T) => boolean): a function to conditionally cache the response
-- `redactKeys` (string[]): extra sensitive fields to redact from the cached data
+**Returns:**
+- `data.online` (boolean): Whether the user is online
+- `data.effectiveType` (string): Connection type ('4g', '3g', '2g', 'slow-2g')
+- `data.downlink` (number): Estimated downlink speed in Mbps
 
-### 6. useAdaptiveImage
-`useAdaptiveImage` loads different image resolutions based on the network speed.
+---
 
-```javascript
-import { useAdaptiveImage } from "react-resilient-hooks"
+### 2. useAdaptiveImage
+
+Automatically select the optimal image quality based on network conditions.
+
+```tsx
+import { useAdaptiveImage } from 'react-resilient-hooks';
 
 function ProfilePicture() {
-  const imageUrl = useAdaptiveImage({
-    low: "/images/profile-low.jpg",
-    medium: "/images/profile-medium.jpg",
-    high: "/images/profile-high.jpg"
+  const { src, quality } = useAdaptiveImage({
+    low: '/images/profile-150.jpg',
+    medium: '/images/profile-300.jpg',
+    high: '/images/profile-600.jpg',
   });
 
-  return <img src={imageUrl} alt="Profile" />;
+  return (
+    <div>
+      <img src={src} alt="Profile" />
+      <p>Current quality: {quality}</p>
+    </div>
+  );
 }
 ```
 
-**Options**:
-- `low`, `medium`, `high`: URLs for each network quality. The hook automatically switches based on the effective network connection type.
+**Parameters:**
+- `sources` - Object with `low`, `medium` (optional), and `high` image URLs
 
-### 7. useConnectionAwarePolling
-`useConnectionAwarePolling` adjusts the polling interval based on the network conditions.
+**Options:**
+- `ssrDefault` ('low' | 'medium' | 'high'): Default quality during SSR (default: 'high')
+- `thresholds` ({ low: number, medium: number }): Custom downlink thresholds in Mbps
 
-```javascript
-import { useConnectionAwarePolling } from "react-resilient-hooks"
-import { useState } from "react"
+**Returns:**
+- `src` (string): The selected image URL
+- `quality` ('low' | 'medium' | 'high'): The quality level selected
+
+---
+
+### 3. useAdaptivePolling
+
+Smart polling that adapts interval based on network conditions with manual controls.
+
+```tsx
+import { useAdaptivePolling } from 'react-resilient-hooks';
+import { useState } from 'react';
 
 function Notifications() {
   const [count, setCount] = useState(0);
 
-  useConnectionAwarePolling(async () => {
-    const res = await fetch("/api/notifications");
-    const data = await res.json();
-    setCount(data.count);
-  }, { baseInterval: 5000 });
-
-  return <p>Notifications: {count}</p>;
-}
-```
-
-**Options**:
-- `baseInterval` (number): polling interval in ms, default `5000`
-- `maxInterval` (number): maximum polling interval in ms, default `60000`
-- `jitter` (boolean): whether to add a random jitter to the interval, default `true`
-
-### 8. useQueue
-`useQueue` provides a simple client-side queue.
-
-```javascript
-import { useQueue } from "react-resilient-hooks"
-
-function TaskQueue() {
-  const { queue, enqueue, dequeue, peek } = useQueue<string>()
+  const { state, pause, resume, triggerNow } = useAdaptivePolling(
+    async () => {
+      const res = await fetch('/api/notifications');
+      const data = await res.json();
+      setCount(data.count);
+    },
+    { baseInterval: 5000 }
+  );
 
   return (
     <div>
-      <button onClick={() => enqueue("Task " + (queue.length + 1))}>Add Task</button>
-      <button onClick={dequeue}>Process Next</button>
-      <p>Next Task: {peek()}</p>
-      <p>Queue: {queue.join(", ")}</p>
-    </div>
-  )
-}
-```
-
-**Options**: none
-
-### 9. useWebsocket
-`useWebsocket` provides a resilient WebSocket connection.
-
-```javascript
-import { useWebsocket } from "react-resilient-hooks"
-
-function Chat() {
-  const { messages, error, sendMessage } = useWebsocket("wss://echo.websocket.org");
-
-  return (
-    <div>
-      <ul>
-        {messages.map((message, i) => <li key={i}>{message}</li>)}
-      </ul>
-      <input type="text" onKeyDown={(e) => {
-        if (e.key === 'Enter') {
-          sendMessage(e.currentTarget.value);
-          e.currentTarget.value = '';
-        }
-      }} />
-      {error && <p>Error: {error.message}</p>}
+      <p>Notifications: {count}</p>
+      <p>Status: {state.isPolling ? 'Polling' : 'Paused'}</p>
+      <button onClick={pause}>Pause</button>
+      <button onClick={resume}>Resume</button>
+      <button onClick={triggerNow}>Fetch Now</button>
     </div>
   );
 }
 ```
 
-## Security Notes
+**Options:**
+- `baseInterval` (number): Base polling interval in ms (default: 5000)
+- `maxInterval` (number): Maximum polling interval in ms (default: 60000)
+- `jitter` (boolean): Add random jitter to prevent thundering herd (default: true)
+- `pauseWhenOffline` (boolean): Pause polling when offline (default: true)
+- `enabled` (boolean): Start polling immediately (default: true)
 
-- Sensitive data such as passwords and tokens are redacted by default when persisted.
-- Use `EncryptedLocalStorageProvider` for client-side encryption of `localStorage`.
-- HTTPS and `HttpOnly` cookies are recommended for authentication tokens.
-- Avoid storing sensitive data in plain `IndexedDB` or `LocalStorage`.
+**Returns:**
+- `state.isPolling` (boolean): Whether polling is active
+- `state.isPaused` (boolean): Whether polling is manually paused
+- `state.currentInterval` (number): Current interval in ms
+- `state.errorCount` (number): Consecutive error count
+- `pause` (() => void): Pause polling
+- `resume` (() => void): Resume polling
+- `triggerNow` (() => Promise<void>): Immediately trigger the callback
 
-## Background Sync
+---
 
-- Works with browsers supporting the Service Worker Background Sync API.
-- Enqueued requests are flushed automatically when network connectivity is restored.
-- If background sync is not supported, the hook falls back to flushing when the browser is online.
-- The queue is persisted in `IndexedDB` or `LocalStorage`.
+### 4. useBackgroundSync
 
-## Performance
+Queue failed requests and sync them when the network is back online.
 
-This library is designed to be lightweight and performant. The hooks are only active when they are used, and they are designed to minimize their impact on your application's performance.
+```tsx
+import { useBackgroundSync } from 'react-resilient-hooks';
 
-Here are some benchmarks:
+function Form() {
+  const { status, enqueue, flush } = useBackgroundSync({
+    onSuccess: (req) => console.log('Synced:', req.id),
+    onError: (req, error) => console.error('Failed:', req.id, error),
+  });
 
-| Hook | Description | Performance Impact |
-| --- | --- | --- |
-| `useNetworkStatus` | Tracks the user's online/offline status | Low |
-| `useOnline` | Returns a boolean value indicating whether the user is online or offline | Low |
-| `useRetryRequest` | Automatically retries a failed fetch request | Medium |
-| `useBackgroundSync` | Queues failed requests and syncs them when the network is back online | Medium |
-| `useOfflineCache` | Caches API responses and serves them when the user is offline | Medium |
-| `useAdaptiveImage` | Loads different image resolutions based on the network speed | Low |
-| `useConnectionAwarePolling` | Adjusts the polling interval based on the network conditions | Low |
-| `useQueue` | Provides a simple client-side queue | Low |
-| `useWebsocket` | Provides a resilient WebSocket connection | Medium |
+  const handleSubmit = async () => {
+    await enqueue(
+      '/api/submit',
+      { method: 'POST', body: JSON.stringify({ data: 'value' }) }
+    );
+  };
 
-## Contribution
+  return (
+    <div>
+      <button onClick={handleSubmit}>Submit</button>
+      <button onClick={flush}>Sync Now</button>
+      <p>Status: {status.status}</p>
+    </div>
+  );
+}
+```
 
-PRs, suggestions, and issues are welcome. Use TypeScript for new hooks and maintain SOLID principles.
+**Options:**
+- `queueStore` (QueueStore): Custom queue store (default: IndexedDBQueueStore)
+- `onSuccess` ((req) => void): Callback when a request succeeds
+- `onError` ((req, error) => void): Callback when a request fails
+
+**Returns:**
+- `status` (ResilientResult): Current sync status ('idle', 'loading', 'success', 'error')
+- `enqueue` ((url, options?, meta?) => Promise<string>): Add a request to the queue
+- `flush` (() => Promise<void>): Manually trigger sync
+
+---
+
+## Advanced Usage
+
+### Custom Queue Stores
+
+```tsx
+import { useBackgroundSync, MemoryQueueStore } from 'react-resilient-hooks';
+
+// Use in-memory store instead of IndexedDB
+const memoryStore = new MemoryQueueStore();
+
+function MyComponent() {
+  const { enqueue } = useBackgroundSync({ queueStore: memoryStore });
+  // ...
+}
+```
+
+### Service Worker Integration
+
+```tsx
+import { registerServiceWorker } from 'react-resilient-hooks';
+
+// Register service worker for true background sync
+await registerServiceWorker('/sw.js');
+```
+
+## Development
+
+This is a monorepo managed with npm workspaces.
+
+```bash
+# Install dependencies
+npm install
+
+# Build the package
+npm run build --workspace=react-resilient-hooks
+
+# Run the landing page
+npm run dev --workspace=react-resilient-hooks-landing
+```
 
 ## License
 

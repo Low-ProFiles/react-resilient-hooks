@@ -1,107 +1,58 @@
 'use client';
 
-import { useCallback, useState, useEffect, useRef } from 'react';
-import { useNetworkStatus, MemoryQueueStore } from 'react-resilient-hooks';
-
-export type QueuedReq = {
-  id: string;
-  url: string;
-  options?: RequestInit;
-  meta?: Record<string, unknown>;
-};
+import { useState, useRef } from 'react';
+import { useBackgroundSync, useNetworkStatus } from 'react-resilient-hooks';
 
 interface Message {
-  id: number;
+  id: string;
   content: string;
   status: 'queued' | 'syncing' | 'synced' | 'failed';
   timestamp: string;
 }
 
-const queueStore = new MemoryQueueStore<QueuedReq>();
-
 export function UseBackgroundSyncDemo() {
   const { data: network } = useNetworkStatus();
   const [messageContent, setMessageContent] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
-  const [nextId, setNextId] = useState(1);
-  const [queueSize, setQueueSize] = useState(0);
-  const [isSyncing, setIsSyncing] = useState(false);
   const [syncedCount, setSyncedCount] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const updateQueueSize = useCallback(async () => {
-    const size = await queueStore.size();
-    setQueueSize(size);
-  }, []);
+  const { status, enqueue, flush } = useBackgroundSync({
+    onSuccess: (req) => {
+      setMessages(prev =>
+        prev.map(msg => msg.id === req.id ? { ...msg, status: 'synced' } : msg)
+      );
+      setSyncedCount(c => c + 1);
+    },
+    onError: (req) => {
+      setMessages(prev =>
+        prev.map(msg => msg.id === req.id ? { ...msg, status: 'failed' } : msg)
+      );
+    },
+  });
 
-  const flush = useCallback(async () => {
-    if (isSyncing) return;
-    setIsSyncing(true);
-
-    try {
-      while (!(await queueStore.isEmpty())) {
-        const req = await queueStore.dequeue();
-        if (req) {
-          const msgId = parseInt(req.id, 10);
-          setMessages(prev =>
-            prev.map(msg => msg.id === msgId ? { ...msg, status: 'syncing' } : msg)
-          );
-
-          // Simulate network delay
-          await new Promise(resolve => setTimeout(resolve, 500));
-
-          // Simulate successful sync (in real app, this would be actual fetch)
-          setMessages(prev =>
-            prev.map(msg => msg.id === msgId ? { ...msg, status: 'synced' } : msg)
-          );
-          setSyncedCount(c => c + 1);
-        }
-        await updateQueueSize();
-      }
-    } finally {
-      setIsSyncing(false);
-    }
-  }, [isSyncing, updateQueueSize]);
-
-  useEffect(() => {
-    const onOnline = () => {
-      if (navigator.onLine) {
-        flush();
-      }
-    };
-    window.addEventListener('online', onOnline);
-    return () => window.removeEventListener('online', onOnline);
-  }, [flush]);
-
-  // Auto-sync when online and queue has items
-  useEffect(() => {
-    if (network?.online && queueSize > 0 && !isSyncing) {
-      flush();
-    }
-  }, [network?.online, queueSize, isSyncing, flush]);
+  const isSyncing = status.status === 'loading';
+  const queueSize = messages.filter(m => m.status === 'queued' || m.status === 'syncing').length;
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!messageContent.trim()) return;
 
+    const id = await enqueue(
+      '/api/messages',
+      { method: 'POST', body: JSON.stringify({ content: messageContent }) },
+      { content: messageContent }
+    );
+
     const newMessage: Message = {
-      id: nextId,
+      id,
       content: messageContent,
       status: 'queued',
       timestamp: new Date().toLocaleTimeString(),
     };
 
-    // Add to queue
-    await queueStore.enqueue({
-      id: String(nextId),
-      url: '/api/messages',
-      options: { method: 'POST', body: JSON.stringify({ content: messageContent }) },
-    });
-
     setMessages(prev => [newMessage, ...prev]);
-    setNextId(prev => prev + 1);
     setMessageContent('');
-    await updateQueueSize();
     inputRef.current?.focus();
   };
 
@@ -177,6 +128,14 @@ export function UseBackgroundSyncDemo() {
           disabled={!messageContent.trim()}
         >
           Queue
+        </button>
+        <button
+          type="button"
+          onClick={flush}
+          className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50"
+          disabled={isSyncing || queueSize === 0}
+        >
+          Flush
         </button>
       </form>
 
