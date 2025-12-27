@@ -1,13 +1,14 @@
 import { CodeBlock } from '../../../../components/CodeBlock';
-import { motion, AnimatePresence } from 'framer-motion';
 
 export default function UseBackgroundSyncPage() {
   return (
     <div>
       <h1 className="text-3xl font-bold mb-4">useBackgroundSync</h1>
-      <p className="mb-4">A simple example of using `useBackgroundSync` with animations and a11y features:</p>
-            <CodeBlock
-              code={`import { useBackgroundSync } from '@resilient/utils';
+      <p className="mb-4">
+        A simple example of using `useBackgroundSync` with animations and a11y features:
+      </p>
+      <CodeBlock
+        code={`import { useBackgroundSync } from '@resilient/utils';
       import { MemoryQueueStore } from '@resilient/core';
       import { motion, AnimatePresence } from 'framer-motion';
       
@@ -39,7 +40,8 @@ export default function UseBackgroundSyncPage() {
             </AnimatePresence>
           </div>
         );
-      }`} />
+      }`}
+      />
     </div>
   );
 }

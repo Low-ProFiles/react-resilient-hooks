@@ -5,10 +5,3 @@ export interface QueueStore<T> {
   isEmpty(): Promise<boolean>;
   size(): Promise<number>;
 }
-
-export interface CacheStore<T> {
-  get(key: string): Promise<T | undefined>;
-  set(key: string, value: T): Promise<void>;
-  delete(key: string): Promise<void>;
-  clear(): Promise<void>;
-}

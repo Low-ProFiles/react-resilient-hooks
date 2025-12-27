@@ -1,12 +1,13 @@
 'use client';
 
-import { useAdaptiveImage } from "@resilient/utils";
+import { useAdaptiveImage } from '@resilient/utils';
 import { useI18n } from '../../contexts/I18nProvider';
+import Image from 'next/image';
 
 const imageSources = {
-  low: "https://placehold.co/150",
-  medium: "https://placehold.co/300",
-  high: "https://placehold.co/600",
+  low: 'https://placehold.co/150',
+  medium: 'https://placehold.co/300',
+  high: 'https://placehold.co/600',
 };
 
 export function UseAdaptiveImageDemo() {
@@ -15,7 +16,7 @@ export function UseAdaptiveImageDemo() {
 
   return (
     <div className="mt-4 p-4  flex justify-center items-center min-h-[200px]">
-      <img src={imageUrl} alt="Adaptive Image" className="max-w-full h-auto" />
+      <Image src={imageUrl} alt="Adaptive Image" className="max-w-full h-auto" />
       <p className="text-xs text-gray-500 mt-2 italic">
         {t.hooks.useAdaptiveImage.clarificationNote}
       </p>

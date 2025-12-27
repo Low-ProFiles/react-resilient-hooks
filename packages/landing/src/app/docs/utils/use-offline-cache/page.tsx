@@ -1,13 +1,14 @@
 import { CodeBlock } from '../../../../components/CodeBlock';
-import { motion, AnimatePresence } from 'framer-motion';
 
 export default function UseOfflineCachePage() {
   return (
     <div>
       <h1 className="text-3xl font-bold mb-4">useOfflineCache</h1>
-      <p className="mb-4">A simple example of using `useOfflineCache` with animations and a11y features:</p>
-            <CodeBlock
-              code={`import { useOfflineCache } from '@resilient/utils';
+      <p className="mb-4">
+        A simple example of using `useOfflineCache` with animations and a11y features:
+      </p>
+      <CodeBlock
+        code={`import { useOfflineCache } from '@resilient/utils';
       import { MemoryCacheStore } from '@resilient/core';
       import { motion, AnimatePresence } from 'framer-motion';
       
@@ -45,7 +46,8 @@ export default function UseOfflineCachePage() {
             </AnimatePresence>
           </div>
         );
-      }`} />
+      }`}
+      />
     </div>
   );
 }

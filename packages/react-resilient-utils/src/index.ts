@@ -1,14 +1,10 @@
-export * from './core/ResilientProvider';
-
-export * from './hooks/useAdaptiveImage';
-export * from './hooks/useBackgroundSync';
-export * from './hooks/useConnectionAwarePolling';
+// Core
 export * from './hooks/useNetworkStatus';
-export * from './hooks/useOfflineCache';
-export * from './hooks/useOnline';
-export * from './hooks/useQueue';
-export * from './hooks/useRetry';
-export * from './hooks/useRetryRequest';
-export * from './hooks/useWebsocket';
 
+// Adaptive hooks for low-bandwidth networks
+export * from './hooks/useAdaptiveImage';
+export * from './hooks/useConnectionAwarePolling';
+export * from './hooks/useBackgroundSync';
+
+// Service Worker utilities
 export * from './utils/registerServiceWorker';

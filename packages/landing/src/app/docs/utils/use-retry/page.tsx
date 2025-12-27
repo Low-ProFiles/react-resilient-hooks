@@ -1,11 +1,12 @@
 import { CodeBlock } from '../../../../components/CodeBlock';
-import { motion, AnimatePresence } from 'framer-motion';
 
 export default function UseRetryPage() {
   return (
     <div>
       <h1 className="text-3xl font-bold mb-4">useRetry</h1>
-      <p className="mb-4">A simple example of using `useRetry` with animations and a11y features:</p>
+      <p className="mb-4">
+        A simple example of using `useRetry` with animations and a11y features:
+      </p>
       <CodeBlock
         code={`import { useRetry } from '@resilient/utils';
 import { DefaultRetryPolicy } from '@resilient/core';
@@ -23,8 +24,7 @@ const fetchWithRetry = () => {
   useEffect(() => {
     if (error) {
       errorRef.current?.focus();
-    }
-  }, [error]);
+    }  }, [error]);
 
   return (
     <div>
@@ -51,7 +51,8 @@ const fetchWithRetry = () => {
       </AnimatePresence>
     </div>
   );
-}`} />
+}`}
+      />
     </div>
   );
 }

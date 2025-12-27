@@ -1,18 +1,20 @@
 /// <reference lib="webworker" />
 import { SWMessage, createSWMessage } from './types';
 
+declare const self: ServiceWorkerGlobalScope;
+
 const FLUSH_SUCCESS = 'FLUSH_SUCCESS';
 const FLUSH_FAILURE = 'FLUSH_FAILURE';
 
-self.addEventListener("message", (event: MessageEvent<SWMessage>) => {
-  const { type, payload } = event.data;
+self.addEventListener("message", (event: ExtendableMessageEvent) => {
+  const { type, payload } = event.data as SWMessage;
 
   if (type === 'FLUSH_QUEUE') {
     handleFlush(payload);
   }
 });
 
-async function handleFlush(queue: any[]) {
+async function handleFlush(queue: Array<{ url: string; options?: RequestInit }>) {
   let allSucceeded = true;
   for (const item of queue) {
     try {
@@ -21,32 +23,24 @@ async function handleFlush(queue: any[]) {
         allSucceeded = false;
         break;
       }
-    } catch (error) {
+    } catch {
       allSucceeded = false;
       break;
     }
   }
 
-  if (allSucceeded) {
-    self.clients.matchAll().then(clients => {
-      clients.forEach(client => {
-        client.postMessage(createSWMessage(FLUSH_SUCCESS));
-      });
-    });
-  } else {
-    self.clients.matchAll().then(clients => {
-      clients.forEach(client => {
-        client.postMessage(createSWMessage(FLUSH_FAILURE));
-      });
-    });
-  }
+  const clients = await self.clients.matchAll();
+  const message = createSWMessage(allSucceeded ? FLUSH_SUCCESS : FLUSH_FAILURE);
+  clients.forEach((client) => {
+    client.postMessage(message);
+  });
 }
 
-self.addEventListener("install", (event: any) => {
+self.addEventListener("install", (event: ExtendableEvent) => {
   event.waitUntil(self.skipWaiting());
 });
 
-self.addEventListener("activate", (event: any) => {
+self.addEventListener("activate", (event: ExtendableEvent) => {
   event.waitUntil(self.clients.claim());
 });
 
