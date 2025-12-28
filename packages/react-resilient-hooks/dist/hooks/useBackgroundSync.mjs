@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 
 // src/hooks/useBackgroundSync.ts
 
-// src/core/idbUtils.ts
+// src/stores/idbUtils.ts
 function openDB(dbName, version = 1, upgradeCb) {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(dbName, version);
@@ -101,7 +101,7 @@ async function requestBackgroundSync(tag = "rrh-background-sync") {
   }
 }
 
-// src/hooks/useBackgroundSync.ts
+// src/utils/retry.ts
 var defaultRetryDelay = (attempt) => {
   return Math.min(1e3 * Math.pow(2, attempt), 3e4);
 };
@@ -111,6 +111,9 @@ var defaultShouldRetry = (error) => {
   if (message.includes("network") || message.includes("fetch")) return true;
   return false;
 };
+var delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// src/hooks/useBackgroundSync.ts
 var defaultQueueStore = new IndexedDBQueueStore();
 function useBackgroundSync(options = {}) {
   const {
@@ -147,7 +150,6 @@ function useBackgroundSync(options = {}) {
     }
     return item.id;
   }, [queueStore]);
-  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const flush = useCallback(async () => {
     if (isFlushing.current) return;
     isFlushing.current = true;

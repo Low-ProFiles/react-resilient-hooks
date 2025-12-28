@@ -1,9 +1,15 @@
 import { useEffect, useState, useCallback, useRef } from "react"
-import { ResilientResult } from "../core/types"
+import { ResilientResult } from "../types/types"
 import { QueueStore } from "../stores/types"
 import { IndexedDBQueueStore } from "../stores/implementations"
-import { EventBus } from "../core/eventBus"
+import { EventBus } from "../utils/eventBus"
 import { requestBackgroundSync } from "../utils/registerServiceWorker"
+import {
+  RetryConfig,
+  defaultRetryDelay,
+  defaultShouldRetry,
+  delay
+} from "../utils/retry"
 
 /**
  * A queued request with metadata
@@ -18,7 +24,7 @@ export type QueuedReq = {
 }
 
 /**
- * Retry policy configuration
+ * Retry policy configuration for background sync
  */
 export type RetryPolicy = {
   /** Maximum number of retry attempts (default: 3) */
@@ -46,25 +52,6 @@ export type BackgroundSyncOptions = {
   /** Retry policy configuration */
   retry?: RetryPolicy;
 }
-
-/**
- * Default exponential backoff: 1s, 2s, 4s, 8s... capped at 30s
- */
-const defaultRetryDelay = (attempt: number): number => {
-  return Math.min(1000 * Math.pow(2, attempt), 30000);
-};
-
-/**
- * Default retry condition: retry on 5xx errors and network errors
- */
-const defaultShouldRetry = (error: Error): boolean => {
-  const message = error.message;
-  // Retry on 5xx server errors
-  if (message.startsWith('HTTP 5')) return true;
-  // Retry on network errors
-  if (message.includes('network') || message.includes('fetch')) return true;
-  return false;
-};
 
 const defaultQueueStore = new IndexedDBQueueStore<QueuedReq>();
 
@@ -113,7 +100,6 @@ export function useBackgroundSync(options: BackgroundSyncOptions = {}) {
     return item.id;
   }, [queueStore]);
 
-  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
   const flush = useCallback(async () => {
     if (isFlushing.current) return;

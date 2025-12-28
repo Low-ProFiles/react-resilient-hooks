@@ -1,6 +1,6 @@
 'use strict';
 
-// src/core/idbUtils.ts
+// src/stores/idbUtils.ts
 function openDB(dbName, version = 1, upgradeCb) {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(dbName, version);

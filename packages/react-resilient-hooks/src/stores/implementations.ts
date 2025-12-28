@@ -1,5 +1,5 @@
 import { QueueStore } from './types';
-import { openDB, promisifyRequest } from '../core/idbUtils';
+import { openDB, promisifyRequest } from './idbUtils';
 
 /**
  * In-memory queue store implementation.

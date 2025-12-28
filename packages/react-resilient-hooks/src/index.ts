@@ -13,14 +13,14 @@ export { useNetworkStatus } from './hooks/useNetworkStatus';
 export type { NetworkInfo } from './hooks/useNetworkStatus';
 
 // Core types
-export type { ResilientStatus, ResilientResult, StorageProvider, ResilientState } from './core/types';
+export type { ResilientStatus, ResilientResult, StorageProvider, ResilientState } from './types/types';
 
 // Queue stores (for advanced usage with useBackgroundSync)
 export type { QueueStore } from './stores/types';
 export { MemoryQueueStore, IndexedDBQueueStore } from './stores/implementations';
 
-// Event bus (for advanced usage)
-export { EventBus } from './core/eventBus';
-
-// Service worker utilities
+// Utilities
+export { EventBus } from './utils/eventBus';
 export { requestBackgroundSync, registerServiceWorker } from './utils/registerServiceWorker';
+export { withRetry, defaultRetryDelay, defaultShouldRetry, delay } from './utils/retry';
+export type { RetryConfig } from './utils/retry';

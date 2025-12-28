@@ -38,6 +38,11 @@
       "types": "./dist/stores.d.ts",
       "import": "./dist/stores.mjs",
       "require": "./dist/stores.js"
+    },
+    "./utils": {
+      "types": "./dist/utils.d.ts",
+      "import": "./dist/utils.mjs",
+      "require": "./dist/utils.js"
     }
   },
   "scripts": {

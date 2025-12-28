@@ -8,6 +8,7 @@ export default defineConfig({
     'hooks/useAdaptivePolling': 'src/hooks/useAdaptivePolling.ts',
     'hooks/useBackgroundSync': 'src/hooks/useBackgroundSync.ts',
     stores: 'src/stores/index.ts',
+    utils: 'src/utils/index.ts',
   },
   format: ['cjs', 'esm'],
   dts: true,

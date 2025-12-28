@@ -153,7 +153,7 @@ function useAdaptivePolling(callback, opts = {}) {
   return { state, pause, resume, triggerNow };
 }
 
-// src/core/idbUtils.ts
+// src/stores/idbUtils.ts
 function openDB(dbName, version = 1, upgradeCb) {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(dbName, version);
@@ -286,7 +286,7 @@ async function requestBackgroundSync(tag = "rrh-background-sync") {
   }
 }
 
-// src/hooks/useBackgroundSync.ts
+// src/utils/retry.ts
 var defaultRetryDelay = (attempt) => {
   return Math.min(1e3 * Math.pow(2, attempt), 3e4);
 };
@@ -296,6 +296,32 @@ var defaultShouldRetry = (error) => {
   if (message.includes("network") || message.includes("fetch")) return true;
   return false;
 };
+var defaultRetryConfig = {
+  maxRetries: 3,
+  retryDelay: defaultRetryDelay,
+  shouldRetry: defaultShouldRetry
+};
+async function withRetry(fn, config = {}, onRetry) {
+  const { maxRetries, retryDelay, shouldRetry } = { ...defaultRetryConfig, ...config };
+  let lastError = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      if (attempt < maxRetries && shouldRetry(lastError)) {
+        onRetry?.(attempt + 1, lastError);
+        await delay(retryDelay(attempt));
+      } else {
+        throw lastError;
+      }
+    }
+  }
+  throw lastError;
+}
+var delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// src/hooks/useBackgroundSync.ts
 var defaultQueueStore = new IndexedDBQueueStore();
 function useBackgroundSync(options = {}) {
   const {
@@ -332,7 +358,6 @@ function useBackgroundSync(options = {}) {
     }
     return item.id;
   }, [queueStore]);
-  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const flush = useCallback(async () => {
     if (isFlushing.current) return;
     isFlushing.current = true;
@@ -384,7 +409,7 @@ function useBackgroundSync(options = {}) {
   return { status, enqueue, flush };
 }
 
-// src/core/eventBus.ts
+// src/utils/eventBus.ts
 var EventBus = class {
   constructor() {
     this.listeners = [];
@@ -411,4 +436,4 @@ var EventBus = class {
   }
 };
 
-export { EventBus, IndexedDBQueueStore, MemoryQueueStore, registerServiceWorker, requestBackgroundSync, useAdaptiveImage, useAdaptivePolling, useBackgroundSync, useNetworkStatus };
+export { EventBus, IndexedDBQueueStore, MemoryQueueStore, defaultRetryDelay, defaultShouldRetry, delay, registerServiceWorker, requestBackgroundSync, useAdaptiveImage, useAdaptivePolling, useBackgroundSync, useNetworkStatus, withRetry };
