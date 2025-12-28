@@ -20,16 +20,26 @@ export type AdaptiveImageSource = {
 export type ImageQuality = 'high' | 'medium' | 'low';
 
 /**
+ * Threshold configuration for network quality detection.
+ */
+export type QualityThresholds = {
+  /** Below this downlink (Mbps) = low quality (default: 0.5) */
+  low: number;
+  /** Below this downlink (Mbps) = medium quality (default: 1.5) */
+  medium: number;
+};
+
+/** Default thresholds for quality selection */
+const DEFAULT_THRESHOLDS: QualityThresholds = { low: 0.5, medium: 1.5 };
+
+/**
  * Configuration options for useAdaptiveImage hook.
  */
 export type AdaptiveImageOptions = {
   /** Default quality to use during SSR or when network info unavailable */
   ssrDefault?: ImageQuality;
   /** Custom thresholds for downlink (Mbps) */
-  thresholds?: {
-    low: number;   // below this = low quality (default: 0.5)
-    medium: number; // below this = medium quality (default: 1.5)
-  };
+  thresholds?: QualityThresholds;
 };
 
 /**
@@ -43,38 +53,42 @@ export type AdaptiveImageResult = {
 };
 
 function selectImage(
-  src: AdaptiveImageSource,
+  srcHigh: string,
+  srcMedium: string | undefined,
+  srcLow: string,
   networkStatus: NetworkInfo | null,
-  options: AdaptiveImageOptions
+  ssrDefault: ImageQuality,
+  thresholdLow: number,
+  thresholdMedium: number
 ): AdaptiveImageResult {
-  const { ssrDefault = 'high', thresholds = { low: 0.5, medium: 1.5 } } = options;
+  const srcMap = { high: srcHigh, medium: srcMedium, low: srcLow };
 
   // SSR or no network info available
   if (!networkStatus) {
-    return { src: src[ssrDefault] ?? src.high, quality: ssrDefault };
+    return { src: srcMap[ssrDefault] ?? srcHigh, quality: ssrDefault };
   }
 
   const { effectiveType, downlink } = networkStatus;
 
   // No network quality info available
   if (!effectiveType && downlink === undefined) {
-    return { src: src[ssrDefault] ?? src.high, quality: ssrDefault };
+    return { src: srcMap[ssrDefault] ?? srcHigh, quality: ssrDefault };
   }
 
   const dl = typeof downlink === 'number' ? downlink : 10;
 
   // 2G or very slow connection
-  if (effectiveType?.includes('2g') || dl < thresholds.low) {
-    return { src: src.low, quality: 'low' };
+  if (effectiveType?.includes('2g') || dl < thresholdLow) {
+    return { src: srcLow, quality: 'low' };
   }
 
   // 3G or slow connection
-  if (effectiveType?.includes('3g') || dl < thresholds.medium) {
-    return { src: src.medium ?? src.low, quality: src.medium ? 'medium' : 'low' };
+  if (effectiveType?.includes('3g') || dl < thresholdMedium) {
+    return { src: srcMedium ?? srcLow, quality: srcMedium ? 'medium' : 'low' };
   }
 
   // 4G or fast connection
-  return { src: src.high, quality: 'high' };
+  return { src: srcHigh, quality: 'high' };
 }
 
 /**
@@ -102,9 +116,22 @@ export function useAdaptiveImage(
 ): AdaptiveImageResult {
   const { data: networkStatus } = useNetworkStatus();
 
+  // Extract primitive values from options to use as stable dependencies
+  const ssrDefault = options.ssrDefault ?? 'high';
+  const thresholdLow = options.thresholds?.low ?? DEFAULT_THRESHOLDS.low;
+  const thresholdMedium = options.thresholds?.medium ?? DEFAULT_THRESHOLDS.medium;
+
   const result = useMemo(
-    () => selectImage(src, networkStatus, options),
-    [src.high, src.medium, src.low, networkStatus, options.ssrDefault, options.thresholds?.low, options.thresholds?.medium]
+    () => selectImage(
+      src.high,
+      src.medium,
+      src.low,
+      networkStatus,
+      ssrDefault,
+      thresholdLow,
+      thresholdMedium
+    ),
+    [src.high, src.medium, src.low, networkStatus, ssrDefault, thresholdLow, thresholdMedium]
   );
 
   return result;
