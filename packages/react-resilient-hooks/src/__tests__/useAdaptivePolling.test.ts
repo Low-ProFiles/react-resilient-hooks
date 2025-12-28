@@ -29,10 +29,10 @@ describe('useAdaptivePolling', () => {
     vi.clearAllMocks();
   });
 
-  it('should start polling when enabled', () => {
+  it('should start polling when enabled', async () => {
     const callback = vi.fn();
     const { result } = renderHook(() =>
-      useAdaptivePolling(callback, { baseInterval: 1000 })
+      useAdaptivePolling(callback, { baseInterval: 1000, immediate: false })
     );
 
     expect(result.current.state.isPolling).toBe(true);
@@ -49,31 +49,45 @@ describe('useAdaptivePolling', () => {
     expect(result.current.state.isPaused).toBe(true);
   });
 
-  it('should call callback at specified interval', async () => {
-    const callback = vi.fn();
+  it('should execute immediately when immediate is true (default)', async () => {
+    const callback = vi.fn().mockResolvedValue(undefined);
     renderHook(() =>
-      useAdaptivePolling(callback, { baseInterval: 1000, jitter: false })
+      useAdaptivePolling(callback, { baseInterval: 1000, jitter: false, immediate: true })
+    );
+
+    // Wait for immediate execution
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(callback).toHaveBeenCalledTimes(1);
+  });
+
+  it('should call callback at specified interval', async () => {
+    const callback = vi.fn().mockResolvedValue(undefined);
+    renderHook(() =>
+      useAdaptivePolling(callback, { baseInterval: 1000, jitter: false, immediate: false })
     );
 
     expect(callback).not.toHaveBeenCalled();
 
     await act(async () => {
-      vi.advanceTimersByTime(1000);
+      await vi.advanceTimersByTimeAsync(1000);
     });
 
     expect(callback).toHaveBeenCalledTimes(1);
 
     await act(async () => {
-      vi.advanceTimersByTime(1000);
+      await vi.advanceTimersByTimeAsync(1000);
     });
 
     expect(callback).toHaveBeenCalledTimes(2);
   });
 
   it('should pause polling when pause is called', async () => {
-    const callback = vi.fn();
+    const callback = vi.fn().mockResolvedValue(undefined);
     const { result } = renderHook(() =>
-      useAdaptivePolling(callback, { baseInterval: 1000, jitter: false })
+      useAdaptivePolling(callback, { baseInterval: 1000, jitter: false, immediate: false })
     );
 
     act(() => {
@@ -84,14 +98,14 @@ describe('useAdaptivePolling', () => {
     expect(result.current.state.isPolling).toBe(false);
 
     await act(async () => {
-      vi.advanceTimersByTime(2000);
+      await vi.advanceTimersByTimeAsync(2000);
     });
 
     expect(callback).not.toHaveBeenCalled();
   });
 
   it('should resume polling when resume is called', async () => {
-    const callback = vi.fn();
+    const callback = vi.fn().mockResolvedValue(undefined);
     const { result } = renderHook(() =>
       useAdaptivePolling(callback, { baseInterval: 1000, jitter: false, enabled: false })
     );
@@ -104,17 +118,18 @@ describe('useAdaptivePolling', () => {
 
     expect(result.current.state.isPaused).toBe(false);
 
+    // Wait for immediate execution after resume
     await act(async () => {
-      vi.advanceTimersByTime(1000);
+      await vi.advanceTimersByTimeAsync(0);
     });
 
     expect(callback).toHaveBeenCalledTimes(1);
   });
 
   it('should trigger callback immediately when triggerNow is called', async () => {
-    const callback = vi.fn();
+    const callback = vi.fn().mockResolvedValue(undefined);
     const { result } = renderHook(() =>
-      useAdaptivePolling(callback, { baseInterval: 10000, jitter: false })
+      useAdaptivePolling(callback, { baseInterval: 10000, jitter: false, immediate: false })
     );
 
     expect(callback).not.toHaveBeenCalled();
@@ -176,16 +191,16 @@ describe('useAdaptivePolling', () => {
   });
 
   describe('adaptive interval calculation', () => {
-    it('should use base interval for 4G', () => {
-      const callback = vi.fn();
+    it('should use base interval for 4G', async () => {
+      const callback = vi.fn().mockResolvedValue(undefined);
       const { result } = renderHook(() =>
-        useAdaptivePolling(callback, { baseInterval: 5000, jitter: false })
+        useAdaptivePolling(callback, { baseInterval: 5000, jitter: false, immediate: false })
       );
 
       expect(result.current.state.currentInterval).toBe(5000);
     });
 
-    it('should double interval for 3G', () => {
+    it('should double interval for 3G', async () => {
       Object.defineProperty(navigator, 'connection', {
         value: {
           effectiveType: '3g',
@@ -197,15 +212,15 @@ describe('useAdaptivePolling', () => {
         configurable: true,
       });
 
-      const callback = vi.fn();
+      const callback = vi.fn().mockResolvedValue(undefined);
       const { result } = renderHook(() =>
-        useAdaptivePolling(callback, { baseInterval: 5000, jitter: false })
+        useAdaptivePolling(callback, { baseInterval: 5000, jitter: false, immediate: false })
       );
 
       expect(result.current.state.currentInterval).toBe(10000);
     });
 
-    it('should triple interval for 2G', () => {
+    it('should triple interval for 2G', async () => {
       Object.defineProperty(navigator, 'connection', {
         value: {
           effectiveType: '2g',
@@ -217,15 +232,15 @@ describe('useAdaptivePolling', () => {
         configurable: true,
       });
 
-      const callback = vi.fn();
+      const callback = vi.fn().mockResolvedValue(undefined);
       const { result } = renderHook(() =>
-        useAdaptivePolling(callback, { baseInterval: 5000, jitter: false })
+        useAdaptivePolling(callback, { baseInterval: 5000, jitter: false, immediate: false })
       );
 
       expect(result.current.state.currentInterval).toBe(15000);
     });
 
-    it('should respect maxInterval', () => {
+    it('should respect maxInterval', async () => {
       Object.defineProperty(navigator, 'connection', {
         value: {
           effectiveType: '2g',
@@ -237,12 +252,13 @@ describe('useAdaptivePolling', () => {
         configurable: true,
       });
 
-      const callback = vi.fn();
+      const callback = vi.fn().mockResolvedValue(undefined);
       const { result } = renderHook(() =>
         useAdaptivePolling(callback, {
           baseInterval: 10000,
           maxInterval: 20000,
           jitter: false,
+          immediate: false,
         })
       );
 
@@ -267,16 +283,16 @@ describe('useAdaptivePolling', () => {
       expect(result.current.state.isPolling).toBe(false);
     });
 
-    it('should continue polling when offline if pauseWhenOffline is false', () => {
+    it('should continue polling when offline if pauseWhenOffline is false', async () => {
       Object.defineProperty(navigator, 'onLine', {
         value: false,
         writable: true,
         configurable: true,
       });
 
-      const callback = vi.fn();
+      const callback = vi.fn().mockResolvedValue(undefined);
       const { result } = renderHook(() =>
-        useAdaptivePolling(callback, { baseInterval: 1000, pauseWhenOffline: false })
+        useAdaptivePolling(callback, { baseInterval: 1000, pauseWhenOffline: false, immediate: false })
       );
 
       expect(result.current.state.isPolling).toBe(true);

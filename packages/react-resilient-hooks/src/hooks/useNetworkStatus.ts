@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react"
 import { ResilientState } from "../types/types";
+import {
+  EffectiveConnectionType,
+  getNetworkConnection
+} from "../types/network";
 
 /**
  * Information about the current network connection.
@@ -9,7 +13,7 @@ export type NetworkInfo = {
   /** Whether the browser is online */
   online: boolean
   /** Effective connection type: 'slow-2g', '2g', '3g', or '4g' */
-  effectiveType?: string
+  effectiveType?: EffectiveConnectionType
   /** Estimated downlink speed in Mbps */
   downlink?: number
   /** Estimated round-trip time in milliseconds */
@@ -19,8 +23,42 @@ export type NetworkInfo = {
 }
 
 /**
+ * Check if we're in a browser environment
+ */
+function isBrowser(): boolean {
+  return typeof window !== 'undefined' && typeof navigator !== 'undefined';
+}
+
+/**
+ * Get current network info from the Network Information API
+ * Returns SSR-safe defaults when not in browser
+ */
+function getCurrentNetworkInfo(): NetworkInfo {
+  if (!isBrowser()) {
+    // SSR defaults - assume online with good connection
+    return {
+      online: true,
+      effectiveType: undefined,
+      downlink: undefined,
+      rtt: undefined,
+      saveData: undefined
+    };
+  }
+
+  const connection = getNetworkConnection();
+  return {
+    online: navigator.onLine,
+    effectiveType: connection?.effectiveType,
+    downlink: connection?.downlink,
+    rtt: connection?.rtt,
+    saveData: connection?.saveData
+  };
+}
+
+/**
  * Hook that provides real-time network status information.
  * Automatically updates when online/offline status or connection quality changes.
+ * SSR-safe: returns sensible defaults during server-side rendering.
  *
  * @returns Current network state with data, error, and loading properties
  *
@@ -38,44 +76,41 @@ export type NetworkInfo = {
  * ```
  */
 export function useNetworkStatus(): ResilientState<NetworkInfo> {
-  const [state, setState] = useState<ResilientState<NetworkInfo>>({
-    data: {
-      online: typeof navigator !== "undefined" ? navigator.onLine : true,
-      effectiveType: (navigator as any)?.connection?.effectiveType,
-      downlink: (navigator as any)?.connection?.downlink,
-      rtt: (navigator as any)?.connection?.rtt,
-      saveData: (navigator as any)?.connection?.saveData
-    },
+  const [state, setState] = useState<ResilientState<NetworkInfo>>(() => ({
+    data: getCurrentNetworkInfo(),
     error: null,
     loading: false
-  });
+  }));
 
   useEffect(() => {
+    // Skip if not in browser
+    if (!isBrowser()) {
+      return;
+    }
+
+    const connection = getNetworkConnection();
+
     const update = () => {
       setState({
-        data: {
-          online: navigator.onLine,
-          effectiveType: (navigator as any)?.connection?.effectiveType,
-          downlink: (navigator as any)?.connection?.downlink,
-          rtt: (navigator as any)?.connection?.rtt,
-          saveData: (navigator as any)?.connection?.saveData
-        },
+        data: getCurrentNetworkInfo(),
         error: null,
         loading: false
       });
-    }
+    };
 
-    window.addEventListener("online", update)
-    window.addEventListener("offline", update)
-    const conn = (navigator as any)?.connection
-    conn?.addEventListener?.("change", update)
+    // Update immediately on mount to sync with actual browser state
+    update();
+
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    connection?.addEventListener("change", update);
 
     return () => {
-      window.removeEventListener("online", update)
-      window.removeEventListener("offline", update)
-      conn?.removeEventListener?.("change", update)
-    }
-  }, [])
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+      connection?.removeEventListener("change", update);
+    };
+  }, []);
 
   return state;
 }

@@ -1,4 +1,16 @@
 /**
+ * HTTP status codes that are safe to retry
+ */
+export const RETRYABLE_STATUS_CODES = new Set([
+  408, // Request Timeout
+  429, // Too Many Requests
+  500, // Internal Server Error
+  502, // Bad Gateway
+  503, // Service Unavailable
+  504, // Gateway Timeout
+]);
+
+/**
  * Configuration for retry behavior.
  */
 export type RetryConfig = {
@@ -18,12 +30,50 @@ export const defaultRetryDelay = (attempt: number): number => {
 };
 
 /**
- * Default retry condition: retry on 5xx errors and network errors
+ * Parse HTTP status code from error message
+ */
+function parseStatusCode(message: string): number | null {
+  // Match patterns like "HTTP 500", "HTTP 429", "status: 503"
+  const match = message.match(/(?:HTTP|status[:\s])\s*(\d{3})/i);
+  return match ? parseInt(match[1], 10) : null;
+}
+
+/**
+ * Check if an error represents a network failure (not an HTTP error)
+ */
+function isNetworkError(error: Error): boolean {
+  const message = error.message.toLowerCase();
+  return (
+    message.includes('failed to fetch') ||
+    message.includes('network') ||
+    message.includes('networkerror') ||
+    message.includes('timeout') ||
+    message.includes('econnrefused') ||
+    message.includes('econnreset') ||
+    message.includes('enotfound') ||
+    error.name === 'TypeError' && message.includes('fetch')
+  );
+}
+
+/**
+ * Default retry condition:
+ * - Retry on network errors (no response received)
+ * - Retry on specific HTTP status codes (5xx, 429, 408)
+ * - Do NOT retry on 4xx errors (except 408, 429) as they indicate client errors
  */
 export const defaultShouldRetry = (error: Error): boolean => {
-  const message = error.message;
-  if (message.startsWith('HTTP 5')) return true;
-  if (message.includes('network') || message.includes('fetch')) return true;
+  // Always retry network errors
+  if (isNetworkError(error)) {
+    return true;
+  }
+
+  // Check for HTTP status codes
+  const statusCode = parseStatusCode(error.message);
+  if (statusCode !== null) {
+    return RETRYABLE_STATUS_CODES.has(statusCode);
+  }
+
+  // Unknown error type - don't retry by default
   return false;
 };
 
@@ -35,6 +85,12 @@ export const defaultRetryConfig: RetryConfig = {
   retryDelay: defaultRetryDelay,
   shouldRetry: defaultShouldRetry,
 };
+
+/**
+ * Delay execution for a specified number of milliseconds.
+ */
+export const delay = (ms: number): Promise<void> =>
+  new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * Execute a function with retry logic.
@@ -80,9 +136,3 @@ export async function withRetry<T>(
 
   throw lastError;
 }
-
-/**
- * Delay execution for a specified number of milliseconds.
- */
-export const delay = (ms: number): Promise<void> =>
-  new Promise(resolve => setTimeout(resolve, ms));

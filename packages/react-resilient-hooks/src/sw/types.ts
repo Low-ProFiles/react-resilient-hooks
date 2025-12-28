@@ -1,12 +1,18 @@
 export const SW_MESSAGE_VERSION = 'v1';
 
-export interface SWMessage {
+/**
+ * Message format for service worker communication
+ */
+export interface SWMessage<T = unknown> {
   version: string;
   type: string;
-  payload?: any;
+  payload?: T;
 }
 
-export const createSWMessage = (type: string, payload?: any): SWMessage => ({
+/**
+ * Create a service worker message with proper versioning
+ */
+export const createSWMessage = <T = unknown>(type: string, payload?: T): SWMessage<T> => ({
   version: SW_MESSAGE_VERSION,
   type,
   payload,

@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useBackgroundSync } from '../hooks/useBackgroundSync';
+import { useBackgroundSync, QueuedReq } from '../hooks/useBackgroundSync';
 import { MemoryQueueStore } from '../stores/implementations';
 
 describe('useBackgroundSync', () => {
-  let mockQueueStore: MemoryQueueStore<any>;
+  let mockQueueStore: MemoryQueueStore<QueuedReq>;
+  let mockFetch: Mock;
 
   beforeEach(() => {
     mockQueueStore = new MemoryQueueStore();
@@ -16,7 +17,8 @@ describe('useBackgroundSync', () => {
     });
 
     // Mock fetch
-    global.fetch = vi.fn();
+    mockFetch = vi.fn();
+    global.fetch = mockFetch;
   });
 
   afterEach(() => {
@@ -63,7 +65,7 @@ describe('useBackgroundSync', () => {
 
   it('should flush queue and call onSuccess for successful requests', async () => {
     const onSuccess = vi.fn();
-    (global.fetch as any).mockResolvedValue({ ok: true });
+    mockFetch.mockResolvedValue({ ok: true });
 
     const { result } = renderHook(() =>
       useBackgroundSync({ queueStore: mockQueueStore, onSuccess })
@@ -86,7 +88,7 @@ describe('useBackgroundSync', () => {
   it('should call onError on 4xx errors (no retry)', async () => {
     const onError = vi.fn();
     // 400 errors don't trigger retry by default
-    (global.fetch as any).mockResolvedValue({ ok: false, status: 400 });
+    mockFetch.mockResolvedValue({ ok: false, status: 400 });
 
     const { result } = renderHook(() =>
       useBackgroundSync({ queueStore: mockQueueStore, onError })
@@ -108,7 +110,7 @@ describe('useBackgroundSync', () => {
 
   it('should call onError when retry is disabled', async () => {
     const onError = vi.fn();
-    (global.fetch as any).mockResolvedValue({ ok: false, status: 500 });
+    mockFetch.mockResolvedValue({ ok: false, status: 500 });
 
     const { result } = renderHook(() =>
       useBackgroundSync({
@@ -134,7 +136,7 @@ describe('useBackgroundSync', () => {
 
   it('should handle network errors (no retry when disabled)', async () => {
     const onError = vi.fn();
-    (global.fetch as any).mockRejectedValue(new Error('Network error'));
+    mockFetch.mockRejectedValue(new Error('Network error'));
 
     const { result } = renderHook(() =>
       useBackgroundSync({
@@ -159,7 +161,7 @@ describe('useBackgroundSync', () => {
   });
 
   it('should set loading status during flush', async () => {
-    (global.fetch as any).mockImplementation(
+    mockFetch.mockImplementation(
       () => new Promise((resolve) => setTimeout(() => resolve({ ok: true }), 100))
     );
 
@@ -181,7 +183,7 @@ describe('useBackgroundSync', () => {
 
   it('should store metadata with request', async () => {
     const onSuccess = vi.fn();
-    (global.fetch as any).mockResolvedValue({ ok: true });
+    mockFetch.mockResolvedValue({ ok: true });
 
     const { result } = renderHook(() =>
       useBackgroundSync({ queueStore: mockQueueStore, onSuccess })
@@ -212,7 +214,7 @@ describe('useBackgroundSync', () => {
       const onRetry = vi.fn();
       const onSuccess = vi.fn();
 
-      (global.fetch as any)
+      mockFetch
         .mockResolvedValueOnce({ ok: false, status: 500 })
         .mockResolvedValueOnce({ ok: true });
 
@@ -257,7 +259,7 @@ describe('useBackgroundSync', () => {
       const onError = vi.fn();
       const shouldRetry = vi.fn().mockReturnValue(false);
 
-      (global.fetch as any).mockResolvedValue({ ok: false, status: 500 });
+      mockFetch.mockResolvedValue({ ok: false, status: 500 });
 
       const { result } = renderHook(() =>
         useBackgroundSync({

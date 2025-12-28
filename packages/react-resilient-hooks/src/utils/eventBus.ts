@@ -4,6 +4,11 @@ type Listener<T> = (event: T) => void;
  * Simple pub/sub event bus for broadcasting events to multiple listeners.
  * Used internally for status updates across hooks.
  *
+ * Features:
+ * - O(1) subscribe/unsubscribe using Set
+ * - Automatic cleanup on unsubscribe
+ * - Type-safe events
+ *
  * @typeParam T - Type of events published on this bus
  *
  * @example
@@ -20,7 +25,7 @@ type Listener<T> = (event: T) => void;
  * ```
  */
 export class EventBus<T> {
-  private listeners: Listener<T>[] = [];
+  private listeners = new Set<Listener<T>>();
 
   /**
    * Subscribe to events on this bus.
@@ -29,18 +34,43 @@ export class EventBus<T> {
    * @returns Unsubscribe function to stop receiving events
    */
   public subscribe(listener: Listener<T>): () => void {
-    this.listeners.push(listener);
+    this.listeners.add(listener);
+
+    // Return unsubscribe function
     return () => {
-      this.listeners = this.listeners.filter(l => l !== listener);
+      this.listeners.delete(listener);
     };
   }
 
   /**
    * Publish an event to all subscribers.
+   * Listeners are called synchronously in insertion order.
    *
    * @param event - The event to broadcast
    */
   public publish(event: T): void {
-    this.listeners.forEach(listener => listener(event));
+    this.listeners.forEach(listener => {
+      try {
+        listener(event);
+      } catch {
+        // Prevent one listener's error from affecting others
+      }
+    });
+  }
+
+  /**
+   * Get the current number of subscribers.
+   * Useful for debugging and testing.
+   */
+  public get size(): number {
+    return this.listeners.size;
+  }
+
+  /**
+   * Remove all subscribers.
+   * Useful for cleanup in tests or when the bus is no longer needed.
+   */
+  public clear(): void {
+    this.listeners.clear();
   }
 }

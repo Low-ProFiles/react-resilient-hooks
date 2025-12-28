@@ -1,9 +1,13 @@
+// Import fake-indexeddb BEFORE anything else
+import 'fake-indexeddb/auto';
+
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
+import { NavigatorWithConnection, EffectiveConnectionType } from '../types/network';
 
 // Mock Navigator.connection (Network Information API)
 const mockConnection = {
-  effectiveType: '4g',
+  effectiveType: '4g' as EffectiveConnectionType,
   downlink: 10,
   rtt: 50,
   saveData: false,
@@ -24,21 +28,12 @@ Object.defineProperty(navigator, 'onLine', {
   configurable: true,
 });
 
-// Mock IndexedDB
-const mockIndexedDB = {
-  open: vi.fn(),
-  deleteDatabase: vi.fn(),
-};
-
-Object.defineProperty(window, 'indexedDB', {
-  value: mockIndexedDB,
-  writable: true,
-});
+// Note: IndexedDB is provided by fake-indexeddb/auto imported at the top
 
 // Helper to update network status in tests
 export function setNetworkStatus(options: {
   online?: boolean;
-  effectiveType?: string;
+  effectiveType?: EffectiveConnectionType;
   downlink?: number;
 }) {
   if (options.online !== undefined) {
@@ -48,11 +43,23 @@ export function setNetworkStatus(options: {
       configurable: true,
     });
   }
-  if (options.effectiveType !== undefined) {
-    (navigator as any).connection.effectiveType = options.effectiveType;
+
+  const nav = navigator as NavigatorWithConnection;
+
+  if (options.effectiveType !== undefined && nav.connection) {
+    // Use Object.defineProperty for read-only properties in mock
+    Object.defineProperty(nav.connection, 'effectiveType', {
+      value: options.effectiveType,
+      writable: true,
+      configurable: true,
+    });
   }
-  if (options.downlink !== undefined) {
-    (navigator as any).connection.downlink = options.downlink;
+  if (options.downlink !== undefined && nav.connection) {
+    Object.defineProperty(nav.connection, 'downlink', {
+      value: options.downlink,
+      writable: true,
+      configurable: true,
+    });
   }
 }
 
