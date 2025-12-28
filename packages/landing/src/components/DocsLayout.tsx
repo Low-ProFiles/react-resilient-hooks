@@ -1,7 +1,6 @@
 import { Sidebar } from './Sidebar';
 import { ReactNode } from 'react';
 import { LanguageSwitcher } from './LanguageSwitcher';
-import { ResilientProvider } from '@resilient/utils';
 
 export const DocsLayout = ({ children }: { children: ReactNode }) => {
   return (
@@ -11,9 +10,7 @@ export const DocsLayout = ({ children }: { children: ReactNode }) => {
         <div className="flex justify-end">
           <LanguageSwitcher />
         </div>
-        <ResilientProvider storageType="encrypted-local" passphrase="your-secret-passphrase">
-          {children}
-        </ResilientProvider>
+        {children}
       </main>
     </div>
   );

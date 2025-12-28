@@ -1,21 +1,23 @@
 import type { NextConfig } from "next";
 import withPWA from "next-pwa";
 
+const isProd = process.env.NODE_ENV === 'production';
+
 const nextConfig: NextConfig = {
   output: 'export',
-  basePath: '/react-resilient-hooks',
-  assetPrefix: '/react-resilient-hooks/',
+  basePath: isProd ? '/react-resilient-hooks' : '',
+  assetPrefix: isProd ? '/react-resilient-hooks/' : '',
   images: {
     unoptimized: true,
   },
-  transpilePackages: ['@resilient/core', '@resilient/utils'],
+  transpilePackages: ['react-resilient-hooks'],
 };
 
 const pwaConfig = withPWA({
   dest: "public",
   register: true,
   skipWaiting: true,
-  disable: process.env.NODE_ENV === "development", // Disable PWA in development for easier debugging
+  disable: true, // Temporarily disable PWA for debugging
 });
 
 export default pwaConfig(nextConfig);

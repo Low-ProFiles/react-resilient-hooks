@@ -9,6 +9,8 @@
 /dist
 /out
 /.next/
+**/out/
+**/coverage/
 
 # Logs
 logs

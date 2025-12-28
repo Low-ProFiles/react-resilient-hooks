@@ -4,12 +4,11 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import en from '../locales/en.json';
 import ko from '../locales/ko.json';
 
-
 const translations = { en, ko };
 
 type Locale = 'en' | 'ko';
 
-
+type TranslationKeys = typeof en;
 
 interface I18nContextType {
   locale: Locale;
@@ -29,20 +28,25 @@ export const useI18n = () => {
 
 export const I18nProvider = ({ children }: { children: ReactNode }) => {
   const [locale, setLocale] = useState<Locale>('ko'); // Default to Korean
-  const [t, setT] = useState<TranslationKeys>(translations[locale] as TranslationKeys);
+  const [t, setT] = useState<TranslationKeys>(translations.ko);
 
-  // Load from session storage on initial render
+  // Load from session storage on initial render (client-side only)
   useEffect(() => {
-    const savedLocale = sessionStorage.getItem('locale') as Locale;
-    if (savedLocale && (savedLocale === 'en' || savedLocale === 'ko')) {
-      setLocale(savedLocale);
+    if (typeof window !== 'undefined') {
+      const savedLocale = sessionStorage.getItem('locale') as Locale;
+      if (savedLocale && (savedLocale === 'en' || savedLocale === 'ko')) {
+        setLocale(savedLocale);
+        setT(translations[savedLocale]);
+      }
     }
   }, []);
 
   // Update translations and save to session storage when locale changes
   useEffect(() => {
     setT(translations[locale]);
-    sessionStorage.setItem('locale', locale);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('locale', locale);
+    }
   }, [locale]);
 
   return (

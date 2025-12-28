@@ -1,152 +1,206 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { ResilientResult, QueueStore, MemoryQueueStore } from "@resilient/core";
-import { requestBackgroundSync } from "@resilient/utils";
-
-export type QueuedReq = { id: string; url: string; options?: RequestInit; meta?: Record<string, unknown> };
+import { useState, useRef } from 'react';
+import { useBackgroundSync, useNetworkStatus } from 'react-resilient-hooks';
 
 interface Message {
-  id: number;
+  id: string;
   content: string;
-  status: "pending" | "synced" | "failed";
+  status: 'queued' | 'syncing' | 'synced' | 'failed';
+  timestamp: string;
 }
 
-const queueStore = new MemoryQueueStore<QueuedReq>();
-
 export function UseBackgroundSyncDemo() {
-  const [status, setStatus] = useState<ResilientResult>({ status: "idle" });
-  const [messageContent, setMessageContent] = useState("");
+  const { data: network } = useNetworkStatus();
+  const [messageContent, setMessageContent] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
-  const [nextId, setNextId] = useState(1);
+  const [syncedCount, setSyncedCount] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const enqueue = async (url: string, options?: RequestInit, meta?: Record<string, unknown>) => {
-    const item: QueuedReq = { id: `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`, url, options, meta };
-    await queueStore.enqueue(item);
-    try {
-      await requestBackgroundSync("rrh-background-sync");
-    } catch (err) {
-      console.error("Background sync request failed:", err);
-    }
-    return item.id;
-  };
+  const { status, enqueue, flush, abortFlush } = useBackgroundSync({
+    onSuccess: (req) => {
+      setMessages(prev =>
+        prev.map(msg => msg.id === req.id ? { ...msg, status: 'synced' } : msg)
+      );
+      setSyncedCount(c => c + 1);
+    },
+    onError: (req) => {
+      setMessages(prev =>
+        prev.map(msg => msg.id === req.id ? { ...msg, status: 'failed' } : msg)
+      );
+    },
+    onRetry: (req, attempt) => {
+      console.log(`Retrying ${req.url}, attempt ${attempt}`);
+    },
+    retry: {
+      maxRetries: 3,
+    },
+    concurrency: 2,
+    maxQueueSize: 50,
+  });
 
-  const flush = async () => {
-    setStatus({ status: "loading" });
-    while (!(await queueStore.isEmpty())) {
-      const req = await queueStore.dequeue();
-      if (req) {
-        try {
-          const res = await fetch(req.url, req.options);
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        } catch (err) {
-          setStatus({ status: "error", error: new Error("flush failed") });
-          await queueStore.enqueue(req); // Re-enqueue failed request
-          return;
-        }
-      }
-    }
-    setStatus({ status: "success" });
-  };
-
-  useEffect(() => {
-    const onOnline = () => flush();
-    window.addEventListener("online", onOnline);
-    return () => window.removeEventListener("online", onOnline);
-  }, [flush]);
+  const isSyncing = status.status === 'loading';
+  const queueSize = messages.filter(m => m.status === 'queued' || m.status === 'syncing').length;
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!messageContent.trim()) return;
 
-    const newMessage: Message = {
-      id: nextId,
-      content: messageContent,
-      status: "pending",
-    };
-    setMessages((prevMessages) => [...prevMessages, newMessage]);
-    setNextId((prevId) => prevId + 1);
-    setMessageContent("");
+    const id = await enqueue(
+      '/api/messages',
+      { method: 'POST', body: JSON.stringify({ content: messageContent }) },
+      { content: messageContent }
+    );
 
-    try {
-      const enqueuedId = await enqueue(
-        `https://httpbin.org/post?id=${newMessage.id}`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            message: newMessage.content,
-            id: newMessage.id,
-          }),
-        },
-        { tag: newMessage.id.toString() } // Use message ID as unique tag for the sync
-      );
-      // Update message status when enqueued successfully
-      setMessages((prevMessages) =>
-        prevMessages.map((msg) =>
-          msg.id === newMessage.id ? { ...msg, status: "pending" } : msg
-        )
-      );
-    } catch (error) {
-      console.error("Background sync enqueue failed:", error);
-      setMessages((prevMessages) =>
-        prevMessages.map((msg) =>
-          msg.id === newMessage.id ? { ...msg, status: "failed" } : msg
-        )
-      );
+    const newMessage: Message = {
+      id,
+      content: messageContent,
+      status: 'queued',
+      timestamp: new Date().toLocaleTimeString(),
+    };
+
+    setMessages(prev => [newMessage, ...prev]);
+    setMessageContent('');
+    inputRef.current?.focus();
+  };
+
+  const getStatusIcon = (status: Message['status']) => {
+    switch (status) {
+      case 'queued':
+        return <span className="w-2 h-2 rounded-full bg-yellow-500" />;
+      case 'syncing':
+        return <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />;
+      case 'synced':
+        return <span className="w-2 h-2 rounded-full bg-green-500" />;
+      case 'failed':
+        return <span className="w-2 h-2 rounded-full bg-red-500" />;
+    }
+  };
+
+  const getStatusLabel = (status: Message['status']) => {
+    switch (status) {
+      case 'queued': return 'Queued';
+      case 'syncing': return 'Syncing...';
+      case 'synced': return 'Synced';
+      case 'failed': return 'Failed';
     }
   };
 
   return (
-    <div>
-      <form onSubmit={handleSubmit} className="mb-4">
+    <div className="space-y-6">
+      {/* Status Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-gray-50 dark:bg-zinc-800 rounded-xl p-4 text-center">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Network</p>
+          <div className="flex items-center justify-center gap-2">
+            <span className={`w-2 h-2 rounded-full ${network?.online ? 'bg-green-500' : 'bg-red-500'}`} />
+            <p className={`font-semibold ${network?.online ? 'text-green-600' : 'text-red-600'}`}>
+              {network?.online ? 'Online' : 'Offline'}
+            </p>
+          </div>
+        </div>
+        <div className="bg-gray-50 dark:bg-zinc-800 rounded-xl p-4 text-center">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Queue</p>
+          <p className={`font-semibold ${queueSize > 0 ? 'text-yellow-600' : 'text-gray-600'}`}>
+            {queueSize} pending
+          </p>
+        </div>
+        <div className="bg-gray-50 dark:bg-zinc-800 rounded-xl p-4 text-center">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Status</p>
+          <div className="flex items-center justify-center gap-2">
+            {isSyncing && <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />}
+            <p className={`font-semibold ${isSyncing ? 'text-blue-600' : 'text-gray-600'}`}>
+              {isSyncing ? 'Syncing' : 'Idle'}
+            </p>
+          </div>
+        </div>
+        <div className="bg-gray-50 dark:bg-zinc-800 rounded-xl p-4 text-center">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Synced</p>
+          <p className="font-semibold text-green-600">{syncedCount}</p>
+        </div>
+      </div>
+
+      {/* Input Form */}
+      <form onSubmit={handleSubmit} className="flex gap-3">
         <input
+          ref={inputRef}
           type="text"
           value={messageContent}
           onChange={(e) => setMessageContent(e.target.value)}
-          placeholder="Enter message to sync"
-          className="border p-2 mr-2 rounded-md w-64"
+          placeholder="Type a message to queue..."
+          className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 transition-shadow"
         />
         <button
           type="submit"
-          className="bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600"
+          className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50"
+          disabled={!messageContent.trim()}
         >
-          Submit (will sync offline)
+          Queue
         </button>
+        <button
+          type="button"
+          onClick={flush}
+          className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50"
+          disabled={isSyncing || queueSize === 0}
+        >
+          Flush
+        </button>
+        {isSyncing && (
+          <button
+            type="button"
+            onClick={abortFlush}
+            className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl transition-colors"
+          >
+            Abort
+          </button>
+        )}
       </form>
 
-      <div className="border p-4 rounded-md bg-gray-50 min-h-[100px]">
-        <h3 className="text-lg font-semibold mb-2">Submitted Messages:</h3>
+      {/* Message List */}
+      <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950 rounded-2xl p-6 min-h-[200px]">
+        <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4">Message Queue</h4>
         {messages.length === 0 ? (
-          <p className="text-gray-500">No messages submitted yet.</p>
+          <div className="flex flex-col items-center justify-center py-8 text-gray-400 dark:text-gray-500">
+            <svg className="w-12 h-12 mb-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+            <p className="text-sm">No messages queued yet</p>
+          </div>
         ) : (
-          <ul>
+          <div className="space-y-2">
             {messages.map((msg) => (
-              <li
+              <div
                 key={msg.id}
-                className="flex justify-between items-center py-1"
+                className="flex items-center justify-between bg-white dark:bg-zinc-900 rounded-xl px-4 py-3 shadow-sm"
               >
-                <span>{msg.content}</span>
-                <span
-                  className={`text-sm font-medium ${
-                    msg.status === "pending"
-                      ? "text-yellow-600"
-                      : msg.status === "synced"
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }`}
-                >
-                  {msg.status.charAt(0).toUpperCase() + msg.status.slice(1)}
-                </span>
-              </li>
+                <div className="flex items-center gap-3">
+                  {getStatusIcon(msg.status)}
+                  <span className="font-medium">{msg.content}</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-xs text-gray-400">{msg.timestamp}</span>
+                  <span className={`text-xs font-medium ${
+                    msg.status === 'queued' ? 'text-yellow-600' :
+                    msg.status === 'syncing' ? 'text-blue-600' :
+                    msg.status === 'synced' ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {getStatusLabel(msg.status)}
+                  </span>
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
 
-      <p className="text-sm text-gray-500 mt-4">
-        <strong>How to test:</strong> Go offline in your browser&apos;s DevTools
-        (Network tab), submit messages, then go back online to see them sync.
-      </p>
+      {/* Info */}
+      <div className="bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
+        <h4 className="font-semibold text-emerald-900 dark:text-emerald-100 mb-2">How to test</h4>
+        <p className="text-sm text-emerald-700 dark:text-emerald-300">
+          Open DevTools → Network tab → Select &quot;Offline&quot;. Queue some messages, then go back online.
+          Messages will automatically sync when the connection is restored.
+        </p>
+      </div>
     </div>
   );
 }

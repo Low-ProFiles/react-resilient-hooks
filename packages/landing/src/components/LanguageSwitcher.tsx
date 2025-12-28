@@ -10,7 +10,7 @@ export const LanguageSwitcher = () => {
   };
 
   return (
-    <div className="flex justify-end mb-4">
+    <div className="flex justify-end">
       <button
         onClick={() => handleLanguageChange('ko')}
         className={`px-3 py-1 rounded-md text-sm ${

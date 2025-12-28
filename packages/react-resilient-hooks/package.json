@@ -1,0 +1,87 @@
+{
+  "name": "react-resilient-hooks",
+  "version": "2.0.0",
+  "description": "React hooks for resilient applications - adaptive image loading, connection-aware polling, and background sync for unreliable networks.",
+  "files": [
+    "dist"
+  ],
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./hooks/useNetworkStatus": {
+      "types": "./dist/hooks/useNetworkStatus.d.ts",
+      "import": "./dist/hooks/useNetworkStatus.mjs",
+      "require": "./dist/hooks/useNetworkStatus.js"
+    },
+    "./hooks/useAdaptiveImage": {
+      "types": "./dist/hooks/useAdaptiveImage.d.ts",
+      "import": "./dist/hooks/useAdaptiveImage.mjs",
+      "require": "./dist/hooks/useAdaptiveImage.js"
+    },
+    "./hooks/useAdaptivePolling": {
+      "types": "./dist/hooks/useAdaptivePolling.d.ts",
+      "import": "./dist/hooks/useAdaptivePolling.mjs",
+      "require": "./dist/hooks/useAdaptivePolling.js"
+    },
+    "./hooks/useBackgroundSync": {
+      "types": "./dist/hooks/useBackgroundSync.d.ts",
+      "import": "./dist/hooks/useBackgroundSync.mjs",
+      "require": "./dist/hooks/useBackgroundSync.js"
+    },
+    "./stores": {
+      "types": "./dist/stores.d.ts",
+      "import": "./dist/stores.mjs",
+      "require": "./dist/stores.js"
+    },
+    "./utils": {
+      "types": "./dist/utils.d.ts",
+      "import": "./dist/utils.mjs",
+      "require": "./dist/utils.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "keywords": [
+    "react",
+    "hooks",
+    "offline",
+    "network",
+    "resilient",
+    "background-sync",
+    "adaptive-image",
+    "polling",
+    "low-bandwidth"
+  ],
+  "author": "Low-ProFiles",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Low-ProFiles/react-resilient-hooks"
+  },
+  "homepage": "https://low-profiles.github.io/react-resilient-hooks",
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@types/react": "^19.1.13",
+    "@vitejs/plugin-react": "^5.1.2",
+    "@vitest/coverage-v8": "^3.2.4",
+    "fake-indexeddb": "^6.2.5",
+    "jsdom": "^27.0.1",
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.5",
+    "vitest": "^3.2.4"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0"
+  }
+}
