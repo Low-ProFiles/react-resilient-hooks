@@ -15,16 +15,22 @@ type AdaptiveImageSource = {
  */
 type ImageQuality = 'high' | 'medium' | 'low';
 /**
+ * Threshold configuration for network quality detection.
+ */
+type QualityThresholds = {
+    /** Below this downlink (Mbps) = low quality (default: 0.5) */
+    low: number;
+    /** Below this downlink (Mbps) = medium quality (default: 1.5) */
+    medium: number;
+};
+/**
  * Configuration options for useAdaptiveImage hook.
  */
 type AdaptiveImageOptions = {
     /** Default quality to use during SSR or when network info unavailable */
     ssrDefault?: ImageQuality;
     /** Custom thresholds for downlink (Mbps) */
-    thresholds?: {
-        low: number;
-        medium: number;
-    };
+    thresholds?: QualityThresholds;
 };
 /**
  * Result returned by useAdaptiveImage hook.
@@ -56,4 +62,4 @@ type AdaptiveImageResult = {
  */
 declare function useAdaptiveImage(src: AdaptiveImageSource, options?: AdaptiveImageOptions): AdaptiveImageResult;
 
-export { type AdaptiveImageOptions, type AdaptiveImageResult, type AdaptiveImageSource, type ImageQuality, useAdaptiveImage };
+export { type AdaptiveImageOptions, type AdaptiveImageResult, type AdaptiveImageSource, type ImageQuality, type QualityThresholds, useAdaptiveImage };

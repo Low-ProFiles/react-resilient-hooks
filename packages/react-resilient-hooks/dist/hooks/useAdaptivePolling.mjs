@@ -1,40 +1,65 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 
 // src/hooks/useAdaptivePolling.ts
+
+// src/types/network.ts
+function getNetworkConnection() {
+  if (typeof navigator === "undefined") {
+    return void 0;
+  }
+  const nav = navigator;
+  return nav.connection ?? nav.mozConnection ?? nav.webkitConnection;
+}
+
+// src/hooks/useNetworkStatus.ts
+function isBrowser() {
+  return typeof window !== "undefined" && typeof navigator !== "undefined";
+}
+function getCurrentNetworkInfo() {
+  if (!isBrowser()) {
+    return {
+      online: true,
+      effectiveType: void 0,
+      downlink: void 0,
+      rtt: void 0,
+      saveData: void 0
+    };
+  }
+  const connection = getNetworkConnection();
+  return {
+    online: navigator.onLine,
+    effectiveType: connection?.effectiveType,
+    downlink: connection?.downlink,
+    rtt: connection?.rtt,
+    saveData: connection?.saveData
+  };
+}
 function useNetworkStatus() {
-  const [state, setState] = useState({
-    data: {
-      online: typeof navigator !== "undefined" ? navigator.onLine : true,
-      effectiveType: navigator?.connection?.effectiveType,
-      downlink: navigator?.connection?.downlink,
-      rtt: navigator?.connection?.rtt,
-      saveData: navigator?.connection?.saveData
-    },
+  const [state, setState] = useState(() => ({
+    data: getCurrentNetworkInfo(),
     error: null,
     loading: false
-  });
+  }));
   useEffect(() => {
+    if (!isBrowser()) {
+      return;
+    }
+    const connection = getNetworkConnection();
     const update = () => {
       setState({
-        data: {
-          online: navigator.onLine,
-          effectiveType: navigator?.connection?.effectiveType,
-          downlink: navigator?.connection?.downlink,
-          rtt: navigator?.connection?.rtt,
-          saveData: navigator?.connection?.saveData
-        },
+        data: getCurrentNetworkInfo(),
         error: null,
         loading: false
       });
     };
+    update();
     window.addEventListener("online", update);
     window.addEventListener("offline", update);
-    const conn = navigator?.connection;
-    conn?.addEventListener?.("change", update);
+    connection?.addEventListener("change", update);
     return () => {
       window.removeEventListener("online", update);
       window.removeEventListener("offline", update);
-      conn?.removeEventListener?.("change", update);
+      connection?.removeEventListener("change", update);
     };
   }, []);
   return state;
@@ -43,9 +68,12 @@ function useNetworkStatus() {
 // src/hooks/useAdaptivePolling.ts
 function calculateInterval(effectiveType, baseInterval, maxInterval) {
   if (!effectiveType) return baseInterval;
-  if (effectiveType.includes("4g")) return baseInterval;
-  if (effectiveType.includes("3g")) return Math.min(baseInterval * 2, maxInterval);
+  if (effectiveType === "4g") return baseInterval;
+  if (effectiveType === "3g") return Math.min(baseInterval * 2, maxInterval);
   return Math.min(baseInterval * 3, maxInterval);
+}
+function addJitter(interval) {
+  return interval + Math.floor(Math.random() * interval * 0.1);
 }
 function useAdaptivePolling(callback, opts = {}) {
   const {
@@ -54,10 +82,14 @@ function useAdaptivePolling(callback, opts = {}) {
     jitter = true,
     pauseWhenOffline = true,
     enabled = true,
+    immediate = true,
     onError
   } = opts;
   const { data: networkStatus } = useNetworkStatus();
   const savedCallback = useRef(callback);
+  const timeoutRef = useRef(null);
+  const isExecutingRef = useRef(false);
+  const mountedRef = useRef(true);
   const [isPaused, setIsPaused] = useState(!enabled);
   const [state, setState] = useState({
     isPolling: false,
@@ -69,22 +101,36 @@ function useAdaptivePolling(callback, opts = {}) {
   useEffect(() => {
     savedCallback.current = callback;
   }, [callback]);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
   const tick = useCallback(async () => {
+    if (isExecutingRef.current || !mountedRef.current) return;
+    isExecutingRef.current = true;
     try {
       await savedCallback.current();
-      setState((prev) => ({
-        ...prev,
-        errorCount: 0,
-        lastError: null
-      }));
+      if (mountedRef.current) {
+        setState((prev) => ({
+          ...prev,
+          errorCount: 0,
+          lastError: null
+        }));
+      }
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
-      setState((prev) => ({
-        ...prev,
-        errorCount: prev.errorCount + 1,
-        lastError: error
-      }));
+      if (mountedRef.current) {
+        setState((prev) => ({
+          ...prev,
+          errorCount: prev.errorCount + 1,
+          lastError: error
+        }));
+      }
       onError?.(error);
+    } finally {
+      isExecutingRef.current = false;
     }
   }, [onError]);
   const pause = useCallback(() => {
@@ -98,32 +144,66 @@ function useAdaptivePolling(callback, opts = {}) {
   const triggerNow = useCallback(async () => {
     await tick();
   }, [tick]);
+  const intervalRef = useRef(baseInterval);
+  const lastBaseIntervalRef = useRef(null);
   useEffect(() => {
+    const interval = calculateInterval(
+      networkStatus?.effectiveType,
+      baseInterval,
+      maxInterval
+    );
+    if (lastBaseIntervalRef.current !== interval) {
+      lastBaseIntervalRef.current = interval;
+      const actualInterval = jitter ? addJitter(interval) : interval;
+      intervalRef.current = actualInterval;
+      setState((prev) => ({
+        ...prev,
+        currentInterval: actualInterval
+      }));
+    }
+  }, [networkStatus?.effectiveType, baseInterval, maxInterval, jitter]);
+  useEffect(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
     if (isPaused) {
       setState((prev) => ({ ...prev, isPolling: false }));
+      return;
+    }
+    if (typeof window === "undefined") {
       return;
     }
     if (pauseWhenOffline && !networkStatus?.online) {
       setState((prev) => ({ ...prev, isPolling: false }));
       return;
     }
-    const interval = calculateInterval(
-      networkStatus?.effectiveType,
-      baseInterval,
-      maxInterval
-    );
-    const actualInterval = jitter ? interval + Math.floor(Math.random() * interval * 0.1) : interval;
-    setState((prev) => ({
-      ...prev,
-      isPolling: true,
-      currentInterval: actualInterval
-    }));
-    const id = setInterval(tick, actualInterval);
-    return () => {
-      clearInterval(id);
-      setState((prev) => ({ ...prev, isPolling: false }));
+    setState((prev) => ({ ...prev, isPolling: true }));
+    const scheduleNext = () => {
+      if (!mountedRef.current) return;
+      timeoutRef.current = setTimeout(async () => {
+        await tick();
+        if (mountedRef.current) {
+          scheduleNext();
+        }
+      }, intervalRef.current);
     };
-  }, [isPaused, networkStatus?.online, networkStatus?.effectiveType, baseInterval, maxInterval, jitter, pauseWhenOffline, tick]);
+    if (immediate) {
+      tick().then(() => {
+        if (mountedRef.current) {
+          scheduleNext();
+        }
+      });
+    } else {
+      scheduleNext();
+    }
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
+  }, [isPaused, networkStatus?.online, pauseWhenOffline, tick, immediate]);
   return { state, pause, resume, triggerNow };
 }
 

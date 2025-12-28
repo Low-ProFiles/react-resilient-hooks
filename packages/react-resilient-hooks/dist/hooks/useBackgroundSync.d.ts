@@ -1,6 +1,6 @@
 import { a as ResilientResult } from '../types-BF29fKSQ.js';
 import { Q as QueueStore } from '../types-DivwYhR1.js';
-import { E as EventBus } from '../eventBus-CWtqFtpt.js';
+import { E as EventBus } from '../eventBus-CJ2Eg9SB.js';
 
 /**
  * A queued request with metadata
@@ -12,6 +12,8 @@ type QueuedReq = {
     meta?: Record<string, unknown>;
     /** Number of retry attempts made */
     retryCount?: number;
+    /** Timestamp when this request was enqueued */
+    enqueuedAt?: number;
 };
 /**
  * Retry policy configuration for background sync
@@ -24,6 +26,36 @@ type RetryPolicy = {
     /** Function to determine if a request should be retried */
     shouldRetry?: (error: Error, req: QueuedReq) => boolean;
 };
+/**
+ * Details about a failed request
+ */
+type FailedRequest = {
+    /** The request that failed */
+    req: QueuedReq;
+    /** The error that caused the failure */
+    error: Error;
+    /** HTTP status code if available */
+    statusCode?: number;
+    /** Number of retry attempts made */
+    attempts: number;
+};
+/**
+ * Result of a flush operation
+ */
+type FlushResult = {
+    /** Number of successfully processed requests */
+    succeeded: number;
+    /** Number of failed requests (after all retries) */
+    failed: number;
+    /** Number of requests still pending (added during flush) */
+    pending: number;
+    /** Details of failed requests */
+    errors: FailedRequest[];
+};
+/**
+ * Behavior when queue is full
+ */
+type QueueFullBehavior = 'drop-oldest' | 'reject';
 /**
  * Options for useBackgroundSync hook
  */
@@ -40,15 +72,32 @@ type BackgroundSyncOptions = {
     onRetry?: (req: QueuedReq, attempt: number, error: Error) => void;
     /** Retry policy configuration */
     retry?: RetryPolicy;
+    /** Number of concurrent requests during flush (default: 3) */
+    concurrency?: number;
+    /** Enable debug logging */
+    debug?: boolean | ((message: string, data?: unknown) => void);
+    /** Maximum number of items in the queue (default: unlimited) */
+    maxQueueSize?: number;
+    /** Behavior when queue is full (default: 'drop-oldest') */
+    onQueueFull?: QueueFullBehavior;
 };
 /**
- * Hook for queueing failed requests and syncing them when the network is back online.
- * Supports retry policies with exponential backoff.
+ * Return type for useBackgroundSync hook
  */
-declare function useBackgroundSync(options?: BackgroundSyncOptions): {
-    status: ResilientResult<unknown>;
+type BackgroundSyncResult = {
+    /** Current sync status */
+    status: ResilientResult;
+    /** Add a request to the queue */
     enqueue: (url: string, options?: RequestInit, meta?: Record<string, unknown>) => Promise<string>;
-    flush: () => Promise<void>;
+    /** Flush all queued requests */
+    flush: () => Promise<FlushResult>;
+    /** Cancel the current flush operation */
+    abortFlush: () => void;
+    /** Get current queue size */
+    getQueueSize: () => Promise<number>;
+    /** Clear all queued requests */
+    clearQueue: () => Promise<void>;
 };
+declare function useBackgroundSync(options?: BackgroundSyncOptions): BackgroundSyncResult;
 
-export { type BackgroundSyncOptions, type QueuedReq, type RetryPolicy, useBackgroundSync };
+export { type BackgroundSyncOptions, type BackgroundSyncResult, type FailedRequest, type FlushResult, type QueueFullBehavior, type QueuedReq, type RetryPolicy, useBackgroundSync };

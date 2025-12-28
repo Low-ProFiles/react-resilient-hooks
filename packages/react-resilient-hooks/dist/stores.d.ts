@@ -19,6 +19,7 @@ declare class MemoryQueueStore<T> implements QueueStore<T> {
 /**
  * IndexedDB-backed queue store implementation.
  * Persistent storage that survives page refreshes and browser restarts.
+ * Guarantees FIFO ordering using auto-incrementing sequence numbers.
  * Recommended for production use with useBackgroundSync.
  *
  * @typeParam T - Type of items stored (must have an 'id' property)
@@ -37,6 +38,7 @@ declare class IndexedDBQueueStore<T extends {
     private dbName;
     private storeName;
     private dbPromise;
+    private isClosed;
     /**
      * Create a new IndexedDB queue store.
      *
@@ -45,12 +47,21 @@ declare class IndexedDBQueueStore<T extends {
      */
     constructor(dbName?: string, storeName?: string);
     private getDB;
+    /**
+     * Open database with proper migration that preserves existing data
+     */
+    private openWithMigration;
     enqueue(item: T): Promise<void>;
     dequeue(): Promise<T | undefined>;
     peek(): Promise<T | undefined>;
     isEmpty(): Promise<boolean>;
     size(): Promise<number>;
     clear(): Promise<void>;
+    /**
+     * Close the database connection.
+     * The connection will be automatically reopened on next operation.
+     */
+    close(): void;
 }
 
 export { IndexedDBQueueStore, MemoryQueueStore, QueueStore };

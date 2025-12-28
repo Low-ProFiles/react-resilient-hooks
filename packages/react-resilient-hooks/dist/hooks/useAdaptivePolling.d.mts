@@ -12,6 +12,8 @@ type PollingOptions = {
     pauseWhenOffline?: boolean;
     /** Start polling immediately (default: true) */
     enabled?: boolean;
+    /** Execute callback immediately on mount (default: true) */
+    immediate?: boolean;
     /** Callback when polling encounters an error */
     onError?: (error: Error) => void;
 };
