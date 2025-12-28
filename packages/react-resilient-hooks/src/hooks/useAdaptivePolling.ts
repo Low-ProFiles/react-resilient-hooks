@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react"
 import { useNetworkStatus } from "./useNetworkStatus"
+import { EffectiveConnectionType } from "../types/network"
 
 /**
  * Configuration options for useAdaptivePolling hook.
@@ -15,6 +16,8 @@ export type PollingOptions = {
   pauseWhenOffline?: boolean;
   /** Start polling immediately (default: true) */
   enabled?: boolean;
+  /** Execute callback immediately on mount (default: true) */
+  immediate?: boolean;
   /** Callback when polling encounters an error */
   onError?: (error: Error) => void;
 };
@@ -50,14 +53,19 @@ export type PollingControls = {
 };
 
 function calculateInterval(
-  effectiveType: string | undefined,
+  effectiveType: EffectiveConnectionType | undefined,
   baseInterval: number,
   maxInterval: number
 ): number {
   if (!effectiveType) return baseInterval;
-  if (effectiveType.includes("4g")) return baseInterval;
-  if (effectiveType.includes("3g")) return Math.min(baseInterval * 2, maxInterval);
+  if (effectiveType === "4g") return baseInterval;
+  if (effectiveType === "3g") return Math.min(baseInterval * 2, maxInterval);
+  // 2g or slow-2g
   return Math.min(baseInterval * 3, maxInterval);
+}
+
+function addJitter(interval: number): number {
+  return interval + Math.floor(Math.random() * interval * 0.1);
 }
 
 /**
@@ -98,11 +106,16 @@ export function useAdaptivePolling(
     jitter = true,
     pauseWhenOffline = true,
     enabled = true,
+    immediate = true,
     onError
   } = opts;
 
   const { data: networkStatus } = useNetworkStatus();
   const savedCallback = useRef(callback);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isExecutingRef = useRef(false);
+  const mountedRef = useRef(true);
+
   const [isPaused, setIsPaused] = useState(!enabled);
   const [state, setState] = useState<PollingState>({
     isPolling: false,
@@ -112,26 +125,44 @@ export function useAdaptivePolling(
     lastError: null
   });
 
+  // Keep callback ref updated
   useEffect(() => {
     savedCallback.current = callback;
   }, [callback]);
 
+  // Track mounted state
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const tick = useCallback(async () => {
+    if (isExecutingRef.current || !mountedRef.current) return;
+    isExecutingRef.current = true;
+
     try {
       await savedCallback.current();
-      setState(prev => ({
-        ...prev,
-        errorCount: 0,
-        lastError: null
-      }));
+      if (mountedRef.current) {
+        setState(prev => ({
+          ...prev,
+          errorCount: 0,
+          lastError: null
+        }));
+      }
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
-      setState(prev => ({
-        ...prev,
-        errorCount: prev.errorCount + 1,
-        lastError: error
-      }));
+      if (mountedRef.current) {
+        setState(prev => ({
+          ...prev,
+          errorCount: prev.errorCount + 1,
+          lastError: error
+        }));
+      }
       onError?.(error);
+    } finally {
+      isExecutingRef.current = false;
     }
   }, [onError]);
 
@@ -149,10 +180,47 @@ export function useAdaptivePolling(
     await tick();
   }, [tick]);
 
+  // Store current interval in a ref so scheduleNext always uses latest value
+  const intervalRef = useRef(baseInterval);
+  // Track the base interval (before jitter) to avoid unnecessary recalculations
+  const lastBaseIntervalRef = useRef<number | null>(null);
+
+  // Update interval when network conditions change
   useEffect(() => {
+    const interval = calculateInterval(
+      networkStatus?.effectiveType,
+      baseInterval,
+      maxInterval
+    );
+
+    // Only recalculate jitter if the base interval actually changed
+    if (lastBaseIntervalRef.current !== interval) {
+      lastBaseIntervalRef.current = interval;
+      const actualInterval = jitter ? addJitter(interval) : interval;
+      intervalRef.current = actualInterval;
+
+      setState(prev => ({
+        ...prev,
+        currentInterval: actualInterval
+      }));
+    }
+  }, [networkStatus?.effectiveType, baseInterval, maxInterval, jitter]);
+
+  useEffect(() => {
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
     // Don't poll if manually paused
     if (isPaused) {
       setState(prev => ({ ...prev, isPolling: false }));
+      return;
+    }
+
+    // Don't poll if SSR
+    if (typeof window === 'undefined') {
       return;
     }
 
@@ -162,28 +230,39 @@ export function useAdaptivePolling(
       return;
     }
 
-    const interval = calculateInterval(
-      networkStatus?.effectiveType,
-      baseInterval,
-      maxInterval
-    );
+    setState(prev => ({ ...prev, isPolling: true }));
 
-    const actualInterval = jitter
-      ? interval + Math.floor(Math.random() * interval * 0.1)
-      : interval;
+    // Schedule next tick using setTimeout (not setInterval)
+    // Uses intervalRef.current to always get the latest interval value
+    const scheduleNext = () => {
+      if (!mountedRef.current) return;
 
-    setState(prev => ({
-      ...prev,
-      isPolling: true,
-      currentInterval: actualInterval
-    }));
-
-    const id = setInterval(tick, actualInterval);
-    return () => {
-      clearInterval(id);
-      setState(prev => ({ ...prev, isPolling: false }));
+      timeoutRef.current = setTimeout(async () => {
+        await tick();
+        if (mountedRef.current) {
+          scheduleNext();
+        }
+      }, intervalRef.current);  // Uses ref to get latest interval
     };
-  }, [isPaused, networkStatus?.online, networkStatus?.effectiveType, baseInterval, maxInterval, jitter, pauseWhenOffline, tick]);
+
+    // Execute immediately if configured
+    if (immediate) {
+      tick().then(() => {
+        if (mountedRef.current) {
+          scheduleNext();
+        }
+      });
+    } else {
+      scheduleNext();
+    }
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
+  }, [isPaused, networkStatus?.online, pauseWhenOffline, tick, immediate]);
 
   return { state, pause, resume, triggerNow };
 }
