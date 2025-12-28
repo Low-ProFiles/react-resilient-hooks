@@ -4,9 +4,9 @@
     "description": "불안정한 네트워크를 위한 React 훅"
   },
   "home": {
-    "title": "견고한 React 앱 구축",
-    "subtitle": "불안정한 네트워크 환경을 위해",
-    "description": "열악한 네트워크 상황을 우아하게 처리하도록 설계된 핵심 React 훅 세트입니다. 이미지 최적화, 폴링 관리, 오프라인 요청 큐잉을 간편하게 처리하세요.",
+    "title": "네트워크 환경에 맞게",
+    "subtitle": "일관된 경험을 제공하는 React 라이브러리",
+    "description": "열악한 네트워크 상황을 일관되게 처리하도록 설계된 핵심 React 훅 세트입니다. 이미지 최적화, 폴링 관리, 오프라인 요청 큐잉을 간편하게 처리하세요.",
     "getStarted": "시작하기",
     "viewOnGitHub": "GitHub에서 보기"
   },
