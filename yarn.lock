@@ -1140,7 +1140,7 @@
   resolved "https://registry.npmjs.org/@swc/core-darwin-arm64/-/core-darwin-arm64-1.15.7.tgz"
   integrity sha512-+hNVUfezUid7LeSHqnhoC6Gh3BROABxjlDNInuZ/fie1RUxaEX4qzDwdTgozJELgHhvYxyPIg1ro8ibnKtgO4g==
 
-"@swc/core@^1", "@swc/core@^1.3.107":
+"@swc/core@^1":
   version "1.15.7"
   resolved "https://registry.npmjs.org/@swc/core/-/core-1.15.7.tgz"
   integrity sha512-kTGB8XI7P+pTKW83tnUEDVP4zduF951u3UAOn5eTi0vyW6MvL56A3+ggMdfuVFtDI0/DsbSzf5z34HVBbuScWw==
@@ -3774,7 +3774,7 @@ levn@^0.4.1:
 lightningcss-darwin-arm64@1.30.1:
   version "1.30.1"
 
-lightningcss@1.30.1:
+lightningcss@^1.29.3, lightningcss@1.30.1:
   version "1.30.1"
   dependencies:
     detect-libc "^2.0.3"
