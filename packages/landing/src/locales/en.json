@@ -12,7 +12,7 @@
   },
   "features": {
     "title": "Core Hooks",
-    "subtitle": "Three powerful hooks for network resilience",
+    "subtitle": "Four powerful hooks for network resilience",
     "useAdaptiveImage": {
       "title": "useAdaptiveImage",
       "description": "Automatically select image quality based on network speed. Serve low-res images on 2G, high-res on 4G."

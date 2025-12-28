@@ -12,7 +12,7 @@
   },
   "features": {
     "title": "핵심 훅",
-    "subtitle": "네트워크 복원력을 위한 3가지 강력한 훅",
+    "subtitle": "네트워크 복원력을 위한 4가지 강력한 훅",
     "useAdaptiveImage": {
       "title": "useAdaptiveImage",
       "description": "네트워크 속도에 따라 자동으로 이미지 품질을 선택합니다. 2G에서는 저해상도, 4G에서는 고해상도 이미지를 제공합니다."

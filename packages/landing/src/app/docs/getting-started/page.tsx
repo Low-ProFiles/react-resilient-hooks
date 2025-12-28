@@ -12,10 +12,10 @@ export default function GettingStartedPage() {
       <section className="mb-12">
         <h2 className="text-xl font-semibold mb-4">Installation</h2>
         <pre className="bg-gray-900 text-gray-100 rounded-xl p-4 overflow-x-auto">
-          <code>npm install react-resilient-hooks react-resilient-hooks</code>
+          <code>npm install react-resilient-hooks</code>
         </pre>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-          Or with yarn: <code className="text-blue-600">yarn add react-resilient-hooks react-resilient-hooks</code>
+          Or with yarn: <code className="text-blue-600">yarn add react-resilient-hooks</code>
         </p>
       </section>
 
@@ -167,20 +167,35 @@ interface NetworkStatus {
       <section>
         <h2 className="text-xl font-semibold mb-4">Next Steps</h2>
         <div className="grid gap-4">
-          <Link href="/docs/hooks/use-adaptive-image" className="block p-4 bg-gray-50 dark:bg-zinc-800 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors">
-            <h3 className="font-semibold text-blue-600 dark:text-blue-400 mb-1">useAdaptiveImage</h3>
+          <Link
+            href="/docs/hooks/use-adaptive-image"
+            className="block p-4 bg-gray-50 dark:bg-zinc-800 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+          >
+            <h3 className="font-semibold text-blue-600 dark:text-blue-400 mb-1">
+              useAdaptiveImage
+            </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Learn about network-aware image loading
             </p>
           </Link>
-          <Link href="/docs/hooks/use-adaptive-polling" className="block p-4 bg-gray-50 dark:bg-zinc-800 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors">
-            <h3 className="font-semibold text-purple-600 dark:text-purple-400 mb-1">useAdaptivePolling</h3>
+          <Link
+            href="/docs/hooks/use-adaptive-polling"
+            className="block p-4 bg-gray-50 dark:bg-zinc-800 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+          >
+            <h3 className="font-semibold text-purple-600 dark:text-purple-400 mb-1">
+              useAdaptivePolling
+            </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Set up smart polling for your application
             </p>
           </Link>
-          <Link href="/docs/hooks/use-background-sync" className="block p-4 bg-gray-50 dark:bg-zinc-800 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors">
-            <h3 className="font-semibold text-emerald-600 dark:text-emerald-400 mb-1">useBackgroundSync</h3>
+          <Link
+            href="/docs/hooks/use-background-sync"
+            className="block p-4 bg-gray-50 dark:bg-zinc-800 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+          >
+            <h3 className="font-semibold text-emerald-600 dark:text-emerald-400 mb-1">
+              useBackgroundSync
+            </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Implement offline-first data syncing
             </p>

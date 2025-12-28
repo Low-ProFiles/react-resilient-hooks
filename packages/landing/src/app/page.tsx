@@ -76,7 +76,7 @@ function PollingPreview({ intervalLabel }: { intervalLabel: string }) {
   }, [network]);
 
   useEffect(() => {
-    const id = setInterval(() => setCount(c => c + 1), interval);
+    const id = setInterval(() => setCount((c) => c + 1), interval);
     return () => clearInterval(id);
   }, [interval]);
 
@@ -96,12 +96,72 @@ function PollingPreview({ intervalLabel }: { intervalLabel: string }) {
   );
 }
 
+function NetworkStatusPreview({ statusLabel }: { statusLabel: string }) {
+  const { data: network } = useNetworkStatus();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) {
+    return (
+      <div className="relative bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950 rounded-2xl p-6 h-full flex items-center justify-center">
+        <div className="text-gray-400">Loading...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950 rounded-2xl p-6 h-full">
+      <div className="absolute top-4 right-4">
+        <span
+          className={`flex items-center gap-1.5 text-xs font-medium ${
+            network?.online ? 'text-green-600' : 'text-red-600'
+          }`}
+        >
+          <span
+            className={`w-2 h-2 rounded-full ${
+              network?.online ? 'bg-green-500 animate-pulse' : 'bg-red-500'
+            }`}
+          />
+          {network?.online ? 'Online' : 'Offline'}
+        </span>
+      </div>
+      <div className="flex flex-col gap-3 pt-4">
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-gray-500 dark:text-gray-400">{statusLabel}</span>
+          <span className="font-mono text-cyan-600 dark:text-cyan-400">
+            {network?.effectiveType?.toUpperCase() || 'N/A'}
+          </span>
+        </div>
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-gray-500 dark:text-gray-400">Downlink</span>
+          <span className="font-mono text-cyan-600 dark:text-cyan-400">
+            {network?.downlink ? `${network.downlink} Mbps` : 'N/A'}
+          </span>
+        </div>
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-gray-500 dark:text-gray-400">RTT</span>
+          <span className="font-mono text-cyan-600 dark:text-cyan-400">
+            {network?.rtt ? `${network.rtt} ms` : 'N/A'}
+          </span>
+        </div>
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-gray-500 dark:text-gray-400">Save Data</span>
+          <span className="font-mono text-cyan-600 dark:text-cyan-400">
+            {network?.saveData ? 'Yes' : 'No'}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function BackgroundSyncPreview({
   queueLabel,
   syncedLabel,
   addLabel,
   syncingLabel,
-  queuingLabel
+  queuingLabel,
 }: {
   queueLabel: string;
   syncedLabel: string;
@@ -115,14 +175,14 @@ function BackgroundSyncPreview({
 
   const addToQueue = () => {
     const item = `#${queue.length + synced.length + 1}`;
-    setQueue(q => [...q, item]);
+    setQueue((q) => [...q, item]);
   };
 
   useEffect(() => {
     if (network?.online && queue.length > 0) {
       const timer = setTimeout(() => {
-        setSynced(s => [...s, queue[0]]);
-        setQueue(q => q.slice(1));
+        setSynced((s) => [...s, queue[0]]);
+        setQueue((q) => q.slice(1));
       }, 800);
       return () => clearTimeout(timer);
     }
@@ -131,27 +191,39 @@ function BackgroundSyncPreview({
   return (
     <div className="relative bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950 rounded-2xl p-6 h-full">
       <div className="absolute top-4 right-4">
-        <span className={`text-xs font-medium ${network?.online ? 'text-green-600' : 'text-red-600'}`}>
+        <span
+          className={`text-xs font-medium ${network?.online ? 'text-green-600' : 'text-red-600'}`}
+        >
           {network?.online ? syncingLabel : queuingLabel}
         </span>
       </div>
       <div className="flex flex-col h-full">
         <div className="flex-1 flex gap-4">
           <div className="flex-1">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{queueLabel} ({queue.length})</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+              {queueLabel} ({queue.length})
+            </p>
             <div className="space-y-1 max-h-20 overflow-hidden">
               {queue.slice(0, 3).map((item, i) => (
-                <div key={i} className="text-xs bg-amber-200 dark:bg-amber-800 rounded px-2 py-1 truncate">
+                <div
+                  key={i}
+                  className="text-xs bg-amber-200 dark:bg-amber-800 rounded px-2 py-1 truncate"
+                >
                   {item}
                 </div>
               ))}
             </div>
           </div>
           <div className="flex-1">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{syncedLabel} ({synced.length})</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+              {syncedLabel} ({synced.length})
+            </p>
             <div className="space-y-1 max-h-20 overflow-hidden">
               {synced.slice(-3).map((item, i) => (
-                <div key={i} className="text-xs bg-green-200 dark:bg-green-800 rounded px-2 py-1 truncate">
+                <div
+                  key={i}
+                  className="text-xs bg-green-200 dark:bg-green-800 rounded px-2 py-1 truncate"
+                >
                   {item}
                 </div>
               ))}
@@ -175,7 +247,7 @@ function FeatureCard({
   icon,
   href,
   learnMore,
-  children
+  children,
 }: {
   title: string;
   description: string;
@@ -191,13 +263,9 @@ function FeatureCard({
           <span className="text-2xl">{icon}</span>
           <h3 className="text-lg font-semibold">{title}</h3>
         </div>
-        <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-          {description}
-        </p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{description}</p>
       </div>
-      <div className="h-48 px-4 pb-4">
-        {children}
-      </div>
+      <div className="h-48 px-4 pb-4">{children}</div>
       <div className="px-6 pb-6">
         <Link
           href={href}
@@ -253,8 +321,7 @@ export default function Home() {
             v1.0 - {locale === 'ko' ? '핵심에 집중 & 경량' : 'Focused & Lightweight'}
           </div>
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-6">
-            {t.home.title}{' '}
-            <span className="gradient-text">{t.home.subtitle}</span>
+            {t.home.title} <span className="gradient-text">{t.home.subtitle}</span>
           </h1>
           <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-8 leading-relaxed">
             {t.home.description}
@@ -266,7 +333,12 @@ export default function Home() {
             >
               {t.home.getStarted}
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
               </svg>
             </Link>
             <a
@@ -291,7 +363,17 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <FeatureCard
+              title={t.features.useNetworkStatus.title}
+              description={t.features.useNetworkStatus.description}
+              icon="📡"
+              href="/docs/hooks/use-network-status"
+              learnMore={locale === 'ko' ? '자세히 보기' : 'Learn more'}
+            >
+              <NetworkStatusPreview statusLabel={locale === 'ko' ? '연결 유형' : 'Connection'} />
+            </FeatureCard>
+
             <FeatureCard
               title={t.features.useAdaptiveImage.title}
               description={t.features.useAdaptiveImage.description}
@@ -334,9 +416,7 @@ export default function Home() {
       {/* Why Section */}
       <section className="py-16 px-4 sm:px-6 bg-gray-50 dark:bg-zinc-900/50">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-12">
-            {t.why.title}
-          </h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-12">{t.why.title}</h2>
           <div className="grid sm:grid-cols-2 gap-8">
             <div className="flex gap-4">
               <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900 flex items-center justify-center flex-shrink-0">
@@ -389,15 +469,11 @@ export default function Home() {
       {/* CTA Section */}
       <section className="py-20 px-4 sm:px-6">
         <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-4">
-            {t.cta.title}
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-8">
-            {t.cta.description}
-          </p>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-4">{t.cta.title}</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-8">{t.cta.description}</p>
           <div className="bg-gray-900 dark:bg-black rounded-xl p-4 font-mono text-sm text-left overflow-x-auto mb-6">
             <code className="text-green-400">npm install</code>
-            <code className="text-white"> react-resilient-hooks react-resilient-hooks</code>
+            <code className="text-white"> react-resilient-hooks</code>
           </div>
           <Link
             href="/docs/getting-started"
@@ -405,7 +481,12 @@ export default function Home() {
           >
             {t.cta.button}
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 7l5 5m0 0l-5 5m5-5H6"
+              />
             </svg>
           </Link>
         </div>
@@ -414,9 +495,16 @@ export default function Home() {
       {/* Footer */}
       <footer className="py-8 px-4 sm:px-6 border-t border-gray-200 dark:border-zinc-800">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500 dark:text-gray-400">
-          <p>{locale === 'ko' ? 'MIT 라이선스 · 불안정한 네트워크를 위해 제작됨' : 'MIT License · Built for unreliable networks'}</p>
+          <p>
+            {locale === 'ko'
+              ? 'MIT 라이선스 · 불안정한 네트워크를 위해 제작됨'
+              : 'MIT License · Built for unreliable networks'}
+          </p>
           <div className="flex gap-6">
-            <Link href="/docs/getting-started" className="hover:text-gray-900 dark:hover:text-white transition-colors">
+            <Link
+              href="/docs/getting-started"
+              className="hover:text-gray-900 dark:hover:text-white transition-colors"
+            >
               {locale === 'ko' ? '문서' : 'Docs'}
             </Link>
             <a
