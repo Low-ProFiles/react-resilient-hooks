@@ -17,7 +17,7 @@ export function UseBackgroundSyncDemo() {
   const [syncedCount, setSyncedCount] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { status, enqueue, flush } = useBackgroundSync({
+  const { status, enqueue, flush, abortFlush } = useBackgroundSync({
     onSuccess: (req) => {
       setMessages(prev =>
         prev.map(msg => msg.id === req.id ? { ...msg, status: 'synced' } : msg)
@@ -29,6 +29,14 @@ export function UseBackgroundSyncDemo() {
         prev.map(msg => msg.id === req.id ? { ...msg, status: 'failed' } : msg)
       );
     },
+    onRetry: (req, attempt) => {
+      console.log(`Retrying ${req.url}, attempt ${attempt}`);
+    },
+    retry: {
+      maxRetries: 3,
+    },
+    concurrency: 2,
+    maxQueueSize: 50,
   });
 
   const isSyncing = status.status === 'loading';
@@ -137,6 +145,15 @@ export function UseBackgroundSyncDemo() {
         >
           Flush
         </button>
+        {isSyncing && (
+          <button
+            type="button"
+            onClick={abortFlush}
+            className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl transition-colors"
+          >
+            Abort
+          </button>
+        )}
       </form>
 
       {/* Message List */}
